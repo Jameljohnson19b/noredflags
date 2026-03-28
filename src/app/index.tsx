@@ -121,19 +121,10 @@ export default function LandingPage() {
         </View>
       </View>
 
-      {/* 19B PROJECTS COMPANY SECTION */}
-      <View style={styles.companySection}>
-        <Text style={styles.companyLabel}>PRODUCED BY</Text>
-        <Text style={styles.companyTitle}>19B PROJECTS</Text>
-        <Text style={styles.companyDescription}>
-          We build tools that capture what was said and reveal what it might mean. Focused on real-time emotional intelligence for the modern era.
-        </Text>
-      </View>
-
       {/* FOOTER */}
       <View style={styles.footer}>
         <View style={styles.footerBrand}>
-          <Text style={styles.footerLogo}>REDFLAGS</Text>
+          <Text style={styles.footerLogo}>NOREDFLAGS</Text>
           <Text style={styles.footerMotto}>Real-time Emotional Intelligence.</Text>
         </View>
 
@@ -141,10 +132,10 @@ export default function LandingPage() {
            <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
            <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
            <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support & Contact</Text></TouchableOpacity>
-           <TouchableOpacity onPress={() => Linking.openURL('https://x.com/redflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
+           <TouchableOpacity onPress={() => Linking.openURL('https://x.com/noredflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
         </View>
 
-        <Text style={styles.footerCopyright}>© {new Date().getFullYear()} 19B PROJECTS. All rights reserved.</Text>
+        <Text style={styles.footerCopyright}>© {new Date().getFullYear()} JEDI LLC. All rights reserved.</Text>
       </View>
 
     </ScrollView>

@@ -70,7 +70,7 @@ export default function SupportPage() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerCopyright}>© {new Date().getFullYear()} 19B PROJECTS. All rights reserved.</Text>
+        <Text style={styles.footerCopyright}>© {new Date().getFullYear()} JEDI LLC. All rights reserved.</Text>
       </View>
 
     </ScrollView>
