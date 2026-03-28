@@ -19,6 +19,11 @@ export default function SignUp() {
     router.replace('/capture/live-input');
   };
 
+  const handleGoogleSignUp = () => {
+    console.log("Registered with Google");
+    router.replace('/capture/live-input');
+  };
+
   const handleGuestSignUp = () => {
     console.log("Continuing as Anonymous Guest");
     router.replace('/capture/live-input');
@@ -29,8 +34,12 @@ export default function SignUp() {
       <Text style={styles.title}>Let's get Personal! 💖</Text>
       <Text style={styles.subtitle}>Stop wasting time. Tell us exactly who you are and what makes someone a *Green for Go*! We'll use your answers to customize your red flags. 🚦</Text>
 
-      <TouchableOpacity style={styles.appleButton} onPress={handleAppleSignUp}>
-        <Text style={styles.appleButtonText}> Sign up with Apple</Text>
+      <TouchableOpacity style={styles.oauthButton} onPress={handleAppleSignUp}>
+        <Text style={styles.oauthButtonText}> Sign up with Apple</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.oauthButton, styles.googleButton]} onPress={handleGoogleSignUp}>
+        <Text style={[styles.oauthButtonText, styles.googleButtonText]}>G Sign up with Google</Text>
       </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
@@ -114,17 +123,26 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 32,
   },
-  appleButton: {
+  oauthButton: {
     backgroundColor: Colors.text,
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
-  appleButtonText: {
+  oauthButtonText: {
     color: Colors.background,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    marginBottom: 24,
+  },
+  googleButtonText: {
+    color: Colors.text,
   },
   dividerContainer: {
     flexDirection: 'row',

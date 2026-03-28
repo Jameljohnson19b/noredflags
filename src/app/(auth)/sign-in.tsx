@@ -8,7 +8,6 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // Basic auth logic placeholder integrating with Firebase Auth later
     console.log("Logged in with:", email);
     router.replace('/capture/live-input');
   };
@@ -18,8 +17,12 @@ export default function SignIn() {
     router.replace('/capture/live-input');
   };
 
+  const handleGoogleLogin = () => {
+    console.log("Logged in with Google");
+    router.replace('/capture/live-input');
+  };
+
   const handleGuestLogin = () => {
-    // Optional anonymous guest mode for onboarding/MVP trial flow
     console.log("Continuing as Anonymous Guest");
     router.replace('/capture/live-input');
   };
@@ -29,8 +32,12 @@ export default function SignIn() {
       <Text style={styles.title}>Welcome Back! 💌</Text>
       <Text style={styles.subtitle}>Time to decode your latest dates.</Text>
 
-      <TouchableOpacity style={styles.appleButton} onPress={handleAppleLogin}>
-        <Text style={styles.appleButtonText}> Sign in with Apple</Text>
+      <TouchableOpacity style={styles.oauthButton} onPress={handleAppleLogin}>
+        <Text style={styles.oauthButtonText}> Sign in with Apple</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={[styles.oauthButton, styles.googleButton]} onPress={handleGoogleLogin}>
+        <Text style={[styles.oauthButtonText, styles.googleButtonText]}>G Sign in with Google</Text>
       </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
@@ -90,17 +97,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 40,
   },
-  appleButton: {
+  oauthButton: {
     backgroundColor: Colors.text, // White/Text color
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
-  appleButtonText: {
+  oauthButtonText: {
     color: Colors.background,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    marginBottom: 24,
+  },
+  googleButtonText: {
+    color: Colors.text,
   },
   dividerContainer: {
     flexDirection: 'row',

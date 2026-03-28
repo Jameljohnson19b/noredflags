@@ -1,4 +1,4 @@
-import { getAuth, signInAnonymously, signInWithEmailAndPassword, OAuthProvider, signInWithCredential } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 
 /**
  * Handles all provider-based Auth methods specified in Product Bible.
@@ -22,7 +22,15 @@ export async function signInApple(idToken: string, rawNonce: string) {
   return signInWithCredential(auth, credential);
 }
 
-// 3. Optional anonymous guest mode for onboarding/MVP trial flow
+// 3. Sign in with Google
+export async function signInGoogle(idToken: string) {
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+  const credential = GoogleAuthProvider.credential(idToken);
+  return signInWithCredential(auth, credential);
+}
+
+// 4. Optional anonymous guest mode for onboarding/MVP trial flow
 export async function signInGuest() {
   const auth = getAuth();
   return signInAnonymously(auth);
