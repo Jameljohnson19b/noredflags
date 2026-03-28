@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Colors } from '../constants/colors';
+import './lib/firebase'; // Initialize Firebase Client Side!
 
 const CookiesPopup = () => {
   const [visible, setVisible] = useState(true);
