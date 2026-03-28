@@ -11,6 +11,30 @@ export default function LiveInputScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AUTH GATE: 
+  // If the user lands here without a profile, they shouldn't even be seeing the UI.
+  // We force them back to the Paywall -> Sign In flow.
+  React.useEffect(() => {
+    const checkAuth = () => {
+      // SIMULATOR BYPASS: Always allow the analyzer in development mode.
+      if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+        console.warn("Dev Mode: Bypassing Intelligence Gate for Simulator...");
+        return;
+      }
+
+      if (!auth.currentUser || auth.currentUser.isAnonymous) {
+        console.log("No authenticated session. Redirecting to Paywall Gate...");
+        router.replace('/paywall/pro');
+      }
+    };
+    
+    // Check on mount AND on auth-state-change to catch session expirations.
+    const unsubscribe = auth.onAuthStateChanged(checkAuth);
+    checkAuth();
+
+    return unsubscribe;
+  }, []);
+
   const handleCapture = async () => {
     if (!input.trim()) return;
     
@@ -19,13 +43,17 @@ export default function LiveInputScreen() {
 
     try {
       const user = auth.currentUser;
-      if (!user) throw new Error("Please log in to capture signals.");
+      const isDev = process.env.EXPO_PUBLIC_ENVIRONMENT === 'development';
+
+      if (!user && !isDev) throw new Error("Please log in to capture signals.");
 
       console.log('Analyzing Signal:', input);
       const res = await AnalysisService.analyzeSignal(input, sessionId);
 
       if (res.success && res.signal) {
+        console.log("Analysis Success! Moving to Psychology Read...");
         setInput('');
+        
         // Push to psychology read with the analysis results
         router.push({
           pathname: '/reports/psychology-read',
@@ -50,7 +78,7 @@ export default function LiveInputScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Capture the Moment</Text>
+      <Text style={styles.header}>ANALYZE POTENTIAL MATCH</Text>
       
       <View style={styles.inputContainer}>
         <TextInput 
@@ -73,7 +101,7 @@ export default function LiveInputScreen() {
         {loading ? (
           <ActivityIndicator color={Colors.background} />
         ) : (
-          <Text style={styles.buttonText}>Capture Signal</Text>
+          <Text style={styles.buttonText}>CHECK FOR FLAGS</Text>
         )}
       </TouchableOpacity>
     </View>

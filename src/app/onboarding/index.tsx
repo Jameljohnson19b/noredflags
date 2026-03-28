@@ -17,6 +17,8 @@ const SelectOption = ({ label, selected, onPress }: { label: string, selected: b
 export default function OnboardingLens() {
   const [lens, setLens] = useState({
     whoAmI: '',
+    userWants: '',
+    userDontWants: '',
     whoTheyDate: '',
     relationshipGoals: '',
     monogamy: 'Monogamous',
@@ -42,24 +44,31 @@ export default function OnboardingLens() {
     setError(null);
 
     try {
-      let user = auth.currentUser;
-      
-      // If no session exists, initialize an anonymous guest session 
-      // per GEMINI.md requirements for low-friction onboarding.
-      if (!user) {
-        console.log("Initializing Anonymous Guest Session...");
-        const cred = await signInAnonymously(auth);
-        user = cred.user;
+      if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+        console.warn("Dev Mode: Bypassing all Cloud Auth for instant simulator onboarding.");
+        // SKIP ALL AUTH CLOUD CALLS
+      } else {
+        let user = auth.currentUser;
+        if (!user) {
+          console.log("Attempting Cloud Auth for onboarding...");
+          try {
+            const cred = await signInAnonymously(auth);
+            user = cred.user;
+          } catch (authErr: any) {
+            console.error("Cloud Auth Failed:", authErr.message);
+            throw authErr;
+          }
+        }
       }
 
-      console.log("Saving Relationship Lens...", lens);
+      console.log("Saving Relationship Lens...");
       await LensService.saveLens(lens);
       
       // Move to capturing signals
       router.replace('/capture/live-input');
     } catch (e: any) {
-      console.error("Error saving lens:", e);
-      setError(e.message || "Failed to save Relationship Lens. Please try again.");
+      console.error("Critical submission error:", e);
+      setError(e.message || "Something went wrong.");
       Alert.alert("Submission Error", e.message || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -67,60 +76,49 @@ export default function OnboardingLens() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={true}
+      alwaysBounceVertical={true}
+      automaticallyAdjustKeyboardInsets={true}
+    >
       <Text style={styles.title}>Your Relationship Lens 🔎</Text>
       <Text style={styles.subtitle}>We use this deeply personal profile to stop generic advice. Tell us the absolute truth about what you need.</Text>
 
       <Text style={styles.label}>Who are you?</Text>
       <TextInput style={styles.input} placeholderTextColor={Colors.textMuted} placeholder="e.g. Introverted designer, 28" value={lens.whoAmI} onChangeText={t => updateLens('whoAmI', t)} />
 
-      <Text style={styles.label}>Who do you usually date?</Text>
+      <View style={styles.masterSection}>
+        <Text style={styles.masterLabel}>THE WANT LIST</Text>
+        <Text style={styles.masterSub}>What do you actually want in a partner?</Text>
+        <TextInput 
+          style={[styles.input, styles.textArea, styles.masterInput]} 
+          placeholderTextColor={Colors.textMuted} 
+          placeholder="e.g. Emotional intelligence, growth mindset, stability..." 
+          multiline 
+          value={lens.userWants} 
+          onChangeText={t => updateLens('userWants', t)} 
+        />
+      </View>
+
+      <View style={styles.masterSection}>
+        <Text style={styles.masterLabel}>THE NO LIST (DEALBREAKERS)</Text>
+        <Text style={styles.masterSub}>What is absolutely NOT allowed?</Text>
+        <TextInput 
+          style={[styles.input, styles.textArea, styles.masterInput, { borderColor: '#EF4444' }]} 
+          placeholderTextColor={Colors.textMuted} 
+          placeholder="e.g. Inconsistency, bad hygiene, over-attachment" 
+          multiline 
+          value={lens.userDontWants} 
+          onChangeText={t => updateLens('userDontWants', t)} 
+        />
+      </View>
+
+      <Text style={[styles.label, { marginTop: 40 }]}>Who do you usually date?</Text>
       <TextInput style={styles.input} placeholderTextColor={Colors.textMuted} placeholder="e.g. Creative types, older men" value={lens.whoTheyDate} onChangeText={t => updateLens('whoTheyDate', t)} />
 
-      <Text style={styles.label}>What's the goal right now?</Text>
-      <TextInput style={styles.input} placeholderTextColor={Colors.textMuted} placeholder="e.g. Casual leading to long-term" value={lens.relationshipGoals} onChangeText={t => updateLens('relationshipGoals', t)} />
-
-      <Text style={styles.label}>Relationship Style</Text>
-      <View style={styles.row}>
-        <SelectOption label="Monogamy" selected={lens.monogamy === 'Monogamy'} onPress={() => updateLens('monogamy', 'Monogamy')} />
-        <SelectOption label="Non-Monogamy" selected={lens.monogamy === 'Non-Monogamy'} onPress={() => updateLens('monogamy', 'Non-Monogamy')} />
-      </View>
-
-      <Text style={styles.label}>Do you want children?</Text>
-      <View style={styles.row}>
-        <SelectOption label="Yes" selected={lens.desireForChildren === 'Yes'} onPress={() => updateLens('desireForChildren', 'Yes')} />
-        <SelectOption label="No" selected={lens.desireForChildren === 'No'} onPress={() => updateLens('desireForChildren', 'No')} />
-        <SelectOption label="Maybe" selected={lens.desireForChildren === 'Maybe'} onPress={() => updateLens('desireForChildren', 'Maybe')} />
-      </View>
-
-      <Text style={styles.label}>Open to them having kids?</Text>
-      <View style={styles.row}>
-        <SelectOption label="Yes" selected={lens.openToChildren === 'Yes'} onPress={() => updateLens('openToChildren', 'Yes')} />
-        <SelectOption label="No" selected={lens.openToChildren === 'No'} onPress={() => updateLens('openToChildren', 'No')} />
-      </View>
-
-      <Text style={styles.label}>Financial Stability Importance</Text>
-      <View style={styles.row}>
-        <SelectOption label="Low" selected={lens.financialImportance === 'Low'} onPress={() => updateLens('financialImportance', 'Low')} />
-        <SelectOption label="Medium" selected={lens.financialImportance === 'Medium'} onPress={() => updateLens('financialImportance', 'Medium')} />
-        <SelectOption label="High" selected={lens.financialImportance === 'High'} onPress={() => updateLens('financialImportance', 'High')} />
-      </View>
-
-      <Text style={styles.label}>Ambition Importance</Text>
-      <View style={styles.row}>
-        <SelectOption label="Low" selected={lens.ambitionImportance === 'Low'} onPress={() => updateLens('ambitionImportance', 'Low')} />
-        <SelectOption label="Medium" selected={lens.ambitionImportance === 'Medium'} onPress={() => updateLens('ambitionImportance', 'Medium')} />
-        <SelectOption label="High" selected={lens.ambitionImportance === 'High'} onPress={() => updateLens('ambitionImportance', 'High')} />
-      </View>
-
-      <Text style={styles.label}>Lifestyle Preferences</Text>
-      <TextInput style={[styles.input, styles.textArea]} placeholderTextColor={Colors.textMuted} placeholder="e.g. Travel heavy, loves dogs, sober" multiline value={lens.lifestyle} onChangeText={t => updateLens('lifestyle', t)} />
-
-      <Text style={styles.label}>Hard Dealbreakers</Text>
-      <TextInput style={[styles.input, styles.textArea]} placeholderTextColor={Colors.textMuted} placeholder="e.g. Smoking, inconsistent communication" multiline value={lens.hardDealbreakers} onChangeText={t => updateLens('hardDealbreakers', t)} />
-
-      <Text style={styles.label}>Soft Concerns</Text>
-      <TextInput style={[styles.input, styles.textArea]} placeholderTextColor={Colors.textMuted} placeholder="e.g. Poor texter but good in person" multiline value={lens.softConcerns} onChangeText={t => updateLens('softConcerns', t)} />
 
       {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -143,7 +141,8 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     paddingTop: 60,
-    paddingBottom: 80,
+    paddingBottom: 100,
+    flexGrow: 1,
   },
   title: {
     color: Colors.text,
@@ -163,6 +162,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 8,
+  },
+  masterSection: {
+    marginTop: 40,
+    backgroundColor: '#111',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  masterLabel: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  masterSub: {
+    color: Colors.textMuted,
+    fontSize: 14,
+    marginBottom: 16,
+    marginTop: 2,
+  },
+  masterInput: {
+    backgroundColor: '#000',
+    borderColor: '#333',
   },
   input: {
     backgroundColor: Colors.card,

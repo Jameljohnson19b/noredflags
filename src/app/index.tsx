@@ -54,29 +54,13 @@ export default function LandingPage() {
         </Text>
 
         <View style={styles.ctaContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/(auth)/sign-up')}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/paywall/pro')}>
             <Text style={styles.primaryButtonText}>Build Your Filter Now</Text>
           </TouchableOpacity>
         </View>
 
-        {/* App Store Download Badges */}
-        <View style={styles.appStoreRow}>
-           <TouchableOpacity style={styles.storeBadge} onPress={() => Linking.openURL('https://apple.com/app-store')}>
-             <Text style={styles.storeBadgeIcon}></Text>
-             <View>
-               <Text style={styles.storeBadgeSub}>Download on the</Text>
-               <Text style={styles.storeBadgeMain}>App Store</Text>
-             </View>
-           </TouchableOpacity>
+        {/* App Store Download Badges removed for native builds */}
 
-           <TouchableOpacity style={styles.storeBadge} onPress={() => Linking.openURL('https://play.google.com/store/games')}>
-             <Text style={styles.storeBadgeIcon}>▶</Text>
-             <View>
-               <Text style={styles.storeBadgeSub}>GET IT ON</Text>
-               <Text style={styles.storeBadgeMain}>Google Play</Text>
-             </View>
-           </TouchableOpacity>
-        </View>
       </View>
 
       {/* Floating Demo Elements replicating gen-z dynamic layouts */}
@@ -164,7 +148,8 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: 100,
+    flexGrow: 1,
   },
   nav: {
     width: '100%',
@@ -204,7 +189,7 @@ const styles = StyleSheet.create({
   hero: {
     maxWidth: 900,
     width: '100%',
-    alignItems: isMobile ? 'flex-start' : 'center',
+    alignItems: 'center',
     marginTop: isMobile ? 20 : 60,
     zIndex: 10,
   },
@@ -215,6 +200,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 16,
+    textAlign: 'center',
   },
   heroTitle: {
     color: '#ffffff',
@@ -222,7 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: isMobile ? 60 : 100,
     letterSpacing: -2,
-    textAlign: isMobile ? 'left' : 'center',
+    textAlign: 'center',
   },
   heroTitleOutlined: {
     color: 'transparent',
@@ -230,7 +216,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: isMobile ? 60 : 100,
     letterSpacing: -2,
-    textAlign: isMobile ? 'left' : 'center',
+    textAlign: 'center',
     textShadowColor: '#ffffff',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 1,
@@ -241,7 +227,7 @@ const styles = StyleSheet.create({
     fontSize: isMobile ? 18 : 24,
     fontWeight: '500',
     lineHeight: 32,
-    textAlign: isMobile ? 'left' : 'center',
+    textAlign: 'center',
     maxWidth: 700,
     marginBottom: 48,
   },
@@ -249,6 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     width: isMobile ? '100%' : 'auto',
+    justifyContent: 'center',
     marginBottom: 32,
   },
   primaryButton: {

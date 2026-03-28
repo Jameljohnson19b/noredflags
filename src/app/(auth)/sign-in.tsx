@@ -9,22 +9,22 @@ export default function SignIn() {
 
   const handleLogin = () => {
     console.log("Logged in with:", email);
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleAppleLogin = () => {
     console.log("Logged in with Apple");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleGoogleLogin = () => {
     console.log("Logged in with Google");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleGuestLogin = () => {
     console.log("Continuing as Anonymous Guest");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   return (

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { Colors } from '../../constants/colors';
 import { RevenueCatService } from '../../lib/purchases/revenueCat';
 import { router } from 'expo-router';
+import { auth } from '../../lib/firebase';
 
 export default function CorePaywallScreen() {
   const [loading, setLoading] = useState(false);
@@ -10,14 +11,30 @@ export default function CorePaywallScreen() {
   const handlePurchase = async (pkgId: string) => {
     setLoading(true);
     try {
-      // Mock logic for core until RC syncs packages
-      Alert.alert("Subscription Started", "Core tier features unlocked.");
-      router.replace('/');
+      if (!auth.currentUser || auth.currentUser.isAnonymous) {
+        Alert.alert(
+          "Secure Subscription",
+          "A permanent account (Apple or Google) is required to subscribe and start your core dating analysis.",
+          [
+            { text: "Log In or Sign Up", onPress: () => router.push('/(auth)/sign-in') }
+          ],
+          { cancelable: false }
+        );
+        return;
+      }
+
+      await finalizePurchase(pkgId);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const finalizePurchase = async (pkgId: string) => {
+    // Mock logic for core until RC syncs packages
+    Alert.alert("Subscription Started", "Core tier features unlocked.");
+    router.replace('/');
   };
 
   return (

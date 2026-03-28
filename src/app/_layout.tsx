@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Colors } from '../constants/colors';
-import './lib/firebase'; // Initialize Firebase Client Side!
 
 const CookiesPopup = () => {
   const [visible, setVisible] = useState(true);
@@ -18,7 +17,10 @@ const CookiesPopup = () => {
         <TouchableOpacity style={styles.cookiesButton} onPress={() => setVisible(false)}>
           <Text style={styles.cookiesButtonText}>Accept</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.cookiesButton, styles.cookiesButtonOutline]} onPress={() => setVisible(false)}>
+        <TouchableOpacity
+          style={[styles.cookiesButton, styles.cookiesButtonOutline]}
+          onPress={() => setVisible(false)}
+        >
           <Text style={styles.cookiesButtonOutlineText}>Decline</Text>
         </TouchableOpacity>
       </View>
@@ -27,17 +29,25 @@ const CookiesPopup = () => {
 };
 
 export default function Layout() {
+  useEffect(() => {
+    import('../lib/firebase').catch((err) => {
+      console.error('Firebase init failed:', err);
+    });
+  }, []);
+
   return (
-    <View style={{ flex: 1 }}>
-      <Stack screenOptions={{
-        headerStyle: {
-          backgroundColor: Colors.background,
-        },
-        headerTintColor: Colors.text,
-        contentStyle: {
-          backgroundColor: Colors.background,
-        }
-      }}>
+    <View style={styles.container}>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: Colors.background,
+          },
+          headerTintColor: Colors.text,
+          contentStyle: {
+            backgroundColor: Colors.background,
+          },
+        }}
+      >
         <Stack.Screen name="index" options={{ title: 'REDFLAGS', headerShown: false }} />
         <Stack.Screen name="capture/live-input" options={{ title: 'Capture Signal', presentation: 'modal' }} />
         <Stack.Screen name="paywall/core" options={{ title: 'Core', presentation: 'fullScreenModal' }} />
@@ -48,12 +58,16 @@ export default function Layout() {
         <Stack.Screen name="(auth)/sign-in" options={{ title: 'Log In', presentation: 'modal' }} />
         <Stack.Screen name="(auth)/sign-up" options={{ title: 'Sign Up', presentation: 'modal' }} />
       </Stack>
-      <CookiesPopup />
+
+      {/* <CookiesPopup /> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   cookiesContainer: {
     position: 'absolute',
     bottom: 24,
@@ -108,5 +122,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
-  }
+  },
 });

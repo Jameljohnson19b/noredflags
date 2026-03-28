@@ -9,15 +9,27 @@ export class RevenueCatService {
    */
   static async initialize() {
     if (this.isConfigured) return;
+
+    // EXPO GO / SIMULATOR GUARD:
+    // Native modules like RevenueCat cannot initialize inside the standard Expo Go client.
+    // We bypass initialization in development to ensure the app doesn't crash on boot.
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+      console.warn("Dev Mode: Skipping Native RevenueCat Initialization (Using Mock Engine)");
+      this.isConfigured = true;
+      return;
+    }
     
     // RevenueCat strict debug tracking during MVP
     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
-    if (Platform.OS === 'ios') {
-       // Awaiting actual env injection. Mock key.
-       await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_RC_IOS_KEY || 'appl_YourRevenueCatIosKeyHere' });
-    } else if (Platform.OS === 'android') {
-       await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_RC_ANDROID_KEY || 'goog_YourRevenueCatAndroidKeyHere' });
+    try {
+        if (Platform.OS === 'ios') {
+            await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_RC_IOS_KEY || 'appl_YourRevenueCatIosKeyHere' });
+        } else if (Platform.OS === 'android') {
+            await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_RC_ANDROID_KEY || 'goog_YourRevenueCatAndroidKeyHere' });
+        }
+    } catch (e) {
+        console.error("Native Purchase Engine Error (Probably Expo Go):", e);
     }
 
     this.isConfigured = true;
@@ -30,6 +42,20 @@ export class RevenueCatService {
    * Pro Tier maps to $9.99/month
    */
   static async fetchOfferings() {
+    // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
+    // This allows the user to see the paywall pricing even if RevenueCat is not yet linked.
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+      console.warn("Dev Mode: Simulating RevenueCat Offerings...");
+      return {
+        current: {
+          availablePackages: [
+            { identifier: 'core_weekly', product: { priceString: '$2.99' } },
+            { identifier: 'pro_monthly', product: { priceString: '$9.99' } }
+          ]
+        }
+      } as any;
+    }
+
     try {
       if (!this.isConfigured) await this.initialize();
       const offerings = await Purchases.getOfferings();
@@ -46,7 +72,15 @@ export class RevenueCatService {
   /**
    * Executes native App Store Purchase.
    */
-  static async purchasePackage(rcPackage: PurchasesPackage) {
+  static async purchasePackage(rcPackage: any) {
+    // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
+    // This bypasses the Apple sandbox requirement to allow testing the analyzer.
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+      console.warn("Dev Mode: Simulating Successful Purchase...");
+      await new Promise(r => setTimeout(r, 1000)); // Simulate App Store transaction lag
+      return { success: true, isPro: true, isCore: false };
+    }
+
     try {
       const { customerInfo } = await Purchases.purchasePackage(rcPackage);
       // Map entitlement key 'pro' or 'core'
@@ -66,6 +100,11 @@ export class RevenueCatService {
    * Restores iOS App Store Subscriptions securely mapping across user devices.
    */
   static async restorePurchases() {
+    // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+        return { success: true, isPro: true, isCore: false };
+    }
+
     try {
       const customerInfo = await Purchases.restorePurchases();
       const isPro = typeof customerInfo.entitlements.active['pro'] !== "undefined";

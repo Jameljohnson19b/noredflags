@@ -15,17 +15,17 @@ export default function PsychologyReadScreen() {
   const getRiskStyles = () => {
     switch(riskLevel) {
       case 'Red Flag':
-        return { color: '#EF4444', border: '#EF4444' };
+        return { color: Colors.maxRisk, border: Colors.maxRisk };
       case 'Yellow Flag':
-        return { color: '#EAB308', border: '#EAB308' };
+        return { color: Colors.caution, border: Colors.caution };
       case 'Green Flag':
-        return { color: '#22C55E', border: '#22C55E' };
+        return { color: Colors.safe, border: Colors.safe };
       case 'Personal Mismatch':
-        return { color: '#F97316', border: '#F97316' };
+        return { color: Colors.warning, border: Colors.warning };
       case 'Personal Match':
-        return { color: '#22C55E', border: '#22C55E' };
+        return { color: Colors.safe, border: Colors.safe };
       default:
-        return { color: '#ffffff', border: '#333333' };
+        return { color: Colors.text, border: Colors.border };
     }
   };
 

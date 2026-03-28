@@ -3,6 +3,8 @@ import { db, auth } from '../firebase';
 
 export interface RelationshipLens {
   whoAmI: string;
+  userWants: string;
+  userDontWants: string;
   whoTheyDate: string;
   relationshipGoals: string;
   monogamy: string;
@@ -22,10 +24,19 @@ export class LensService {
    * Path: users/{uid}/profile/lens
    */
   static async saveLens(lens: RelationshipLens) {
-    const user = auth.currentUser;
-    if (!user) throw new Error("Authentication required to save Relationship Lens.");
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+        console.warn("Dev Mode: Simulating Relationship Lens Cloud Save...");
+        await new Promise(r => setTimeout(r, 500));
+        return { success: true };
+    }
 
-    const lensRef = doc(db, 'users', user.uid, 'profile', 'lens');
+    let userUid = auth.currentUser?.uid;
+
+    if (!userUid) {
+      throw new Error("Authentication required to save Relationship Lens.");
+    }
+
+    const lensRef = doc(db, 'users', userUid, 'profile', 'lens');
     
     await setDoc(lensRef, {
       ...lens,
