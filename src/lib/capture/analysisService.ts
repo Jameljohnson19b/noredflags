@@ -21,43 +21,23 @@ export class AnalysisService {
    */
   static async analyzeSignal(statement: string, sessionId: string): Promise<SignalResponse> {
     const environment = process.env.EXPO_PUBLIC_ENVIRONMENT;
-    console.log(`[AnalysisService] Environment: ${environment}`);
-    console.log(`[AnalysisService] Target URL: ${this.CLOUD_FUNCTION_URL}`);
-
-    const isLocalhost = this.CLOUD_FUNCTION_URL?.includes('127.0.0.1') || this.CLOUD_FUNCTION_URL?.includes('localhost');
-
-    // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
-    // This allows the user to test the Audit -> Report flow even if the 
-    // backend is not reachable or in dev mode.
-    if (environment === 'development' || (environment === 'production' && isLocalhost)) {
-      console.warn("AnalysisService: Simulating DeepSeek Analysis (Dev/Localhost Match)...");
-      await new Promise(r => setTimeout(r, 1500)); // Simulate AI latency
-      return { 
-        success: true, 
-        signal: {
-          content: statement,
-          riskLevel: 'Yellow Flag',
-          reasoning: "MOCK: The AI detected ambiguous intent and potentially inconsistent communication patterns. Recommend a deeper audit of the tone.",
-          confidence: 0.88,
-          createdAt: Date.now()
-        } 
-      };
-    }
+    console.log(`[AnalysisService] Environment Check: ${environment}`);
+    console.log(`[AnalysisService] Target Endpoint: ${this.CLOUD_FUNCTION_URL}`);
 
     const user = auth.currentUser;
     if (!user) {
-      console.error("[AnalysisService] No user found in Auth.");
+      console.error("[AnalysisService] No user found in session.");
       return { success: false, error: "Authentication required to analyze signals." };
     }
 
     try {
       const idToken = await user.getIdToken();
       
-      // Add a timeout to the fetch to prevent "nothing happened" scenarios
+      // Mandatory timeout to prevent UI hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds
 
-      console.log(`[AnalysisService] Sending request to backend...`);
+      console.log(`[AnalysisService] Firing request to Cloud Function...`);
       const response = await fetch(this.CLOUD_FUNCTION_URL, {
         method: 'POST',
         headers: {
@@ -75,19 +55,19 @@ export class AnalysisService {
       clearTimeout(timeoutId);
       
       const data = await response.json();
-      console.log(`[AnalysisService] Backend Response Received:`, data);
+      console.log(`[AnalysisService] Result:`, data);
       
       if (!response.ok) {
-        return { success: false, error: data.error || `Server Error: ${response.status}` };
+        return { success: false, error: data.error || `Server returned ${response.status}` };
       }
 
       return { success: true, signal: data.signal };
     } catch (e: any) {
       if (e.name === 'AbortError') {
-        console.error("[AnalysisService] Request Timed Out.");
-        return { success: false, error: "Analysis timed out. Is the backend server running?" };
+        console.error("[AnalysisService] Request timed out.");
+        return { success: false, error: "The server took too long to respond. Is the Backend running?" };
       }
-      console.error("[AnalysisService] Error:", e);
+      console.error("[AnalysisService] Network/Logic Error:", e);
       return { success: false, error: e.message };
     }
   }
