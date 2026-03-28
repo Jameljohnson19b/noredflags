@@ -9,7 +9,7 @@ export const analyzeSessionHandler = async (req: Request, res: Response): Promis
   }
 
   try {
-    const { statement, sessionId, userId } = req.body;
+    const { statement, sessionId, userId, userContext } = req.body;
 
     if (!statement || !sessionId || !userId) {
        res.status(400).json({ error: 'Missing required fields: statement, sessionId, userId.' });
@@ -17,7 +17,7 @@ export const analyzeSessionHandler = async (req: Request, res: Response): Promis
     }
 
     // Capture what was said. Reveal what it might mean.
-    const analysis = await DeepSeekService.analyzeStatement(statement);
+    const analysis = await DeepSeekService.analyzeStatement(statement, userContext);
 
     const signalData = {
       content: statement,

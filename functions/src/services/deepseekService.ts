@@ -12,19 +12,24 @@ export interface DeepSeekResponse {
 export class DeepSeekService {
   private static readonly API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-  static async analyzeStatement(statement: string): Promise<DeepSeekResponse> {
+  static async analyzeStatement(statement: string, userContext?: string): Promise<DeepSeekResponse> {
     const apiKey = env.DEEPSEEK_API_KEY.value();
 
     if (!apiKey) {
       throw new Error("DEEPSEEK_API_KEY is not configured in the environment.");
     }
 
+    // Capture tailored alignment rules dynamically adjusting the system parameters
+    const tailoredPrompt = userContext 
+      ? `The user provided this background and their relationship "Green Lights" (goals): "${userContext}". Let their specific needs heavily guide whether this statement is a "Green for Go" (safe) or a "Stop on Red" flag.`
+      : ``;
+
     const payload = {
       model: "deepseek-chat",
       messages: [
         {
           role: "system",
-          content: "You are REDFLAGS, a real-time emotional intelligence tool for dating. Evaluate the given statement by capturing what was said. Map the statement into one of the following risk levels strictly: safe, caution, warning, escalation1, escalation2, escalation3, escalation4, maxRisk. Output strictly in JSON format: {\"riskLevel\": \"<level>\", \"reasoning\": \"<explanation>\", \"confidence\": <number between 0 and 1>}."
+          content: `You are REDFLAGS, a real-time emotional intelligence tool for dating. Stop wasting time and figure out if someone is a green for go or if we stop on red! Evaluate the given statement. ${tailoredPrompt} Map the statement into one of the following risk levels strictly: safe, caution, warning, escalation1, escalation2, escalation3, escalation4, maxRisk. Output strictly in JSON format: {"riskLevel": "<level>", "reasoning": "<explanation>", "confidence": <number between 0 and 1>}.`
         },
         {
           role: "user",

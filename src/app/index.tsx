@@ -7,22 +7,22 @@ export default function LandingPage() {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
-        <Text style={styles.title}>REDFLAGS</Text>
-        <Text style={styles.subtitle}>Capture what was said. Reveal what it might mean.</Text>
+        <Text style={styles.title}>REDFLAGS 🚦</Text>
+        <Text style={styles.subtitle}>Green for Go, or Stop on Red?</Text>
         <Text style={styles.description}>
-          A real-time dating signal interpreter that converts fragmented user input into structured insights, risk signals, and actionable follow-ups.
+          Stop wasting time over-analyzing texts and second-guessing every date! Tell us what you're really looking for, log what they said, and let's decode if it's true love or a *major* red flag. 🚩
         </Text>
 
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/capture/live-input')}>
-          <Text style={styles.buttonText}>Capture Signal</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/(auth)/sign-up')}>
+          <Text style={styles.buttonText}>Get Started & Tell Us About You</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.button, styles.outlineButton]} onPress={() => router.push('/(auth)/sign-in')}>
+          <Text style={[styles.buttonText, styles.outlineButtonText]}>Log In</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={[styles.button, styles.outlineButton]} onPress={() => router.push('/paywall/pro')}>
           <Text style={[styles.buttonText, styles.outlineButtonText]}>View Pro Analytics</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.button, styles.outlineButton]} onPress={() => router.push('/reports')}>
-          <Text style={[styles.buttonText, styles.outlineButtonText]}>View Reports</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -50,21 +50,21 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: Colors.text,
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 24,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 20,
   },
   description: {
     color: Colors.textMuted,
     fontSize: 18,
     lineHeight: 28,
-    marginBottom: 48,
+    marginBottom: 40,
   },
   button: {
     backgroundColor: Colors.text,
     paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 16,
   },
