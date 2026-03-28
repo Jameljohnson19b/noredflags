@@ -24,11 +24,13 @@ export class AnalysisService {
     console.log(`[AnalysisService] Environment: ${environment}`);
     console.log(`[AnalysisService] Target URL: ${this.CLOUD_FUNCTION_URL}`);
 
+    const isLocalhost = this.CLOUD_FUNCTION_URL?.includes('127.0.0.1') || this.CLOUD_FUNCTION_URL?.includes('localhost');
+
     // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
     // This allows the user to test the Audit -> Report flow even if the 
     // backend is not reachable or in dev mode.
-    if (environment === 'development') {
-      console.warn("Dev Mode: Simulating DeepSeek Analysis...");
+    if (environment === 'development' || (environment === 'production' && isLocalhost)) {
+      console.warn("AnalysisService: Simulating DeepSeek Analysis (Dev/Localhost Match)...");
       await new Promise(r => setTimeout(r, 1500)); // Simulate AI latency
       return { 
         success: true, 
