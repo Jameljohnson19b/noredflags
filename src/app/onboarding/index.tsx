@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../../constants/colors';
+import { Colors } from '../../constants/colors';
 
 // Simple select pseudo-buttons for the Lens
 const SelectOption = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => (
