@@ -189,6 +189,27 @@ It is a real-time emotional intelligence tool.
 
 ---
 
+## AUTHENTICATION
+
+### Provider
+Firebase Authentication
+
+### Methods
+- Sign in with Apple
+- Email and password
+- Optional anonymous guest mode for onboarding/MVP trial flow
+
+### Rules
+- Guest users can test the app
+- Account required for saving sessions, reports, subscriptions, and sync
+- Anonymous accounts can be upgraded into permanent accounts
+
+### Why
+- Low-friction onboarding
+- Easy App Store support
+- Clean integration with Firestore and subscriptions
+- Strong fit for a private, emotionally sensitive product
+
 ## FINAL TRUTH
 
 REDFLAGS is a second brain for dating.

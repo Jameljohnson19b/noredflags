@@ -10,8 +10,17 @@ export default function SignUp() {
   const [partnerGoals, setPartnerGoals] = useState('');
 
   const handleSignUp = () => {
-    // Saves user context globally for DeepSeek logic
-    console.log("Registered with context: ", aboutYou, partnerGoals);
+    console.log("Registered with email: ", email);
+    router.replace('/capture/live-input');
+  };
+
+  const handleAppleSignUp = () => {
+    console.log("Registered with Apple");
+    router.replace('/capture/live-input');
+  };
+
+  const handleGuestSignUp = () => {
+    console.log("Continuing as Anonymous Guest");
     router.replace('/capture/live-input');
   };
 
@@ -19,6 +28,16 @@ export default function SignUp() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Let's get Personal! 💖</Text>
       <Text style={styles.subtitle}>Stop wasting time. Tell us exactly who you are and what makes someone a *Green for Go*! We'll use your answers to customize your red flags. 🚦</Text>
+
+      <TouchableOpacity style={styles.appleButton} onPress={handleAppleSignUp}>
+        <Text style={styles.appleButtonText}> Sign up with Apple</Text>
+      </TouchableOpacity>
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
+        <Text style={styles.dividerText}>or continue with email</Text>
+        <View style={styles.divider} />
+      </View>
 
       <Text style={styles.label}>Account Details</Text>
       <TextInput
@@ -62,6 +81,10 @@ export default function SignUp() {
         <Text style={styles.buttonText}>Create My Filter</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.guestLink} onPress={handleGuestSignUp}>
+        <Text style={styles.guestText}>Continue as Guest (Test MVP)</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
         <Text style={styles.link}>Already have an account? Log in! 💌</Text>
       </TouchableOpacity>
@@ -91,6 +114,33 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 32,
   },
+  appleButton: {
+    backgroundColor: Colors.text,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  appleButtonText: {
+    color: Colors.background,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    color: Colors.textMuted,
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
   label: {
     color: Colors.text,
     fontSize: 18,
@@ -113,14 +163,14 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   button: {
-    backgroundColor: Colors.text,
+    backgroundColor: Colors.border,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 24,
   },
   buttonText: {
-    color: Colors.background,
+    color: Colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -130,5 +180,15 @@ const styles = StyleSheet.create({
     marginTop: 24,
     fontSize: 16,
     fontWeight: '500',
+  },
+  guestLink: {
+    padding: 16,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  guestText: {
+    color: Colors.textMuted,
+    fontSize: 16,
+    textDecorationLine: 'underline',
   }
 });
