@@ -1,10 +1,8 @@
 import * as admin from 'firebase-admin';
-import * as serviceAccount from '../../serviceAccount.json';
 
+// Initialize with application default credentials for use with Emulator or Cloud
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as any)
-  });
+  admin.initializeApp();
 }
 
 export const db = admin.firestore();

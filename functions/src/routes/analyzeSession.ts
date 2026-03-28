@@ -1,8 +1,9 @@
-import { Request, Response } from 'firebase-functions/v2/https';
+import { Request } from 'firebase-functions/v2/https';
 import { DeepSeekService } from '../services/deepseekService';
 import { db } from '../config/firebaseAdmin';
 
-export const analyzeSessionHandler = async (req: Request, res: Response): Promise<void> => {
+// Fix: Using any for response to resolve typing mismatch with Express during build
+export const analyzeSessionHandler = async (req: Request, res: any): Promise<void> => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
@@ -16,15 +17,11 @@ export const analyzeSessionHandler = async (req: Request, res: Response): Promis
        return;
     }
 
-    // FETCH THE RELATIONSHIP LENS:
-    // This is the core engine of REDFLAGS. We pull the user's specific preferences 
-    // to map the AI analysis strictly to their personal goals/dealbreakers.
     const lensRef = db.collection('users').doc(userId).collection('profile').doc('lens');
     const lensSnap = await lensRef.get();
     
     const activeLens = lensSnap.exists ? lensSnap.data() : userContext;
 
-    // Capture what was said. Reveal what it might mean.
     const analysis = await DeepSeekService.analyzeStatement(statement, activeLens);
 
     const signalData = {
@@ -35,7 +32,6 @@ export const analyzeSessionHandler = async (req: Request, res: Response): Promis
       createdAt: new Date().getTime(),
     };
 
-    // Store in Firestore securely
     await db.collection('users').doc(userId).collection('sessions').doc(sessionId).collection('signals').add(signalData);
 
     res.status(200).json({ success: true, signal: signalData });

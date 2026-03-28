@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
@@ -7,64 +7,98 @@ const { width } = Dimensions.get('window');
 const isMobile = width < 768;
 const isWeb = Platform.OS === 'web';
 
-export default function LandingPage() {
-  const floatAnim = React.useRef(new Animated.Value(0)).current;
+// DYNAMIC MODULATOR COMPONENT: Shows the core mechanic
+const SignalSystemDemo = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const colorAnim = useRef(new Animated.Value(0)).current; // 0: Neutral, 1: Orange, 2: Yellow, 3: Red
+
+  const steps = [
+    { text: "Searching...", color: '#222', label: "WAITING FOR SIGNAL" },
+    { text: "\"I have 6 kids and 3 ex-wives.\"", color: '#F97316', label: "🟠 CAUTION: HIGH COMPLEXITY" },
+    { text: "\"I've held my current job for 12 years.\"", color: '#EAB308', label: "🟡 OFFSET: STABILITY DETECTED" },
+    { text: "\"I just got indicted for federal fraud.\"", color: '#EF4444', label: "🔴 MAX RISK: LEGAL COMPROMISE" }
+  ];
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 2500, useNativeDriver: isWeb ? false : true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 2500, useNativeDriver: isWeb ? false : true })
-      ])
-    ).start();
-  }, [floatAnim]);
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % steps.length);
+    }, 4000);
 
-  const floatStyle = {
-    transform: [{
-      translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -15] })
-    }]
-  };
+    return () => clearInterval(interval);
+  }, []);
 
-  const openAppStore = () => {
-    Linking.openURL('https://apps.apple.com/app/redflags');
-  };
+  useEffect(() => {
+    Animated.timing(colorAnim, {
+      toValue: currentStep,
+      duration: 800,
+      useNativeDriver: false
+    }).start();
+  }, [currentStep]);
 
-  const openPlayStore = () => {
-    Linking.openURL('https://play.google.com/store/apps/details?id=com.noredflags');
-  };
+  const bgColor = colorAnim.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: ['#111111', '#F9731633', '#EAB30833', '#EF444433']
+  });
+
+  const borderColor = colorAnim.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: ['#333', '#F97316', '#EAB308', '#EF4444']
+  });
+
+  return (
+    <Animated.View style={[styles.demoContainer, { backgroundColor: bgColor, borderColor: borderColor }]}>
+      <Text style={styles.demoLabel}>{steps[currentStep].label}</Text>
+      <Text style={styles.demoText}>{steps[currentStep].text}</Text>
+      <View style={styles.demoWaveform}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <View key={i} style={[styles.waveBar, { height: 10 + (Math.random() * 30), backgroundColor: steps[currentStep].color }]} />
+        ))}
+      </View>
+    </Animated.View>
+  );
+};
+
+export default function LandingPage() {
+  const openAppStore = () => Linking.openURL('https://apps.apple.com/app/noredflags');
+  const openPlayStore = () => Linking.openURL('https://play.google.com/store/apps/details?id=com.noredflags');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      
+
       {/* Navbar Section */}
-      <View style={styles.nav}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Image source={require('../../assets/images/logo.png')} style={{ width: 36, height: 36, resizeMode: 'contain' }} />
-          <Text style={styles.navLogo}>REDFLAGS</Text>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <View style={styles.nav}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Image source={require('../../assets/images/logo.png')} style={{ width: 36, height: 36, resizeMode: 'contain' }} />
+            <Text style={styles.navLogo}>NOREDFLAGS</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            {!isWeb && (
+              <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
+                <Text style={styles.navLogin}>Settings</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          {!isWeb && (
-            <TouchableOpacity onPress={() => router.push('/paywall/pro')} style={styles.navProLink}>
-              <Text style={styles.navProText}>Upgrade to Pro</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
-            <Text style={styles.navLogin}>Log In</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </div>
 
       {/* Hero Section */}
       <View style={styles.hero}>
-        <Text style={styles.heroSuper}>Stop wasting time.</Text>
-        <Text style={styles.heroTitle}>KNOW EXACTLY</Text>
-        <Text style={styles.heroTitleOutlined}>WHO THEY ARE.</Text>
-        
+        <Text style={styles.heroSuper}>KNOW BEFORE YOU GO BACK.</Text>
+        <Text style={styles.heroTitle}>YOU SEE THE</Text>
+        <Text style={styles.heroTitleOutlined}>SIGNS.</Text>
+
         <Text style={styles.heroDescription}>
-          REDFLAGS is a real-time dating signal interpreter. We decode their texts, map their traits to your own Relationship Lens, and reveal what it might mean.
+          Capture what they said. Watch the signals change in real-time. NOREDFLAGS uses Personalized AI to reveal the psychological gaps you're prone to missing.
         </Text>
 
-        {isWeb ? (
+        <View style={styles.ctaContainer}>
+          <TouchableOpacity style={styles.primaryButton} onPress={isWeb ? openAppStore : () => router.push('/onboarding')}>
+            <Text style={styles.primaryButtonText}>Try It Free</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isWeb && (
           <View style={styles.webDownloadRow}>
             <TouchableOpacity style={styles.storeBadge} onPress={openAppStore}>
               <Text style={styles.storeBadgeIcon}></Text>
@@ -81,34 +115,20 @@ export default function LandingPage() {
               </View>
             </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.ctaContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/paywall/pro')}>
-              <Text style={styles.primaryButtonText}>Build Your Filter Now</Text>
-            </TouchableOpacity>
-          </View>
         )}
-
       </View>
 
-      {/* Floating Demo Elements */}
-      <Animated.View style={[styles.floatingCard, styles.cardRed, floatStyle]}>
-        <Text style={styles.floatingText}>"I'm not looking for anything serious rn but..."</Text>
-        <View style={styles.badgeRed}><Text style={styles.badgeTextInverse}>🚩 RED FLAG: TIME WASTER</Text></View>
-      </Animated.View>
+      {/* CORE MECHANIC DEMO */}
+      <Text style={styles.sectionHeader}>REAL-TIME SIGNAL MODULATION</Text>
+      <SignalSystemDemo />
 
-      <Animated.View style={[styles.floatingCard, styles.cardGreen, floatStyle]}>
-        <Text style={styles.floatingText}>"I bought us tickets to that band you mentioned!"</Text>
-        <View style={styles.badgeGreen}><Text style={styles.badgeText}>🟢 GREEN FLAG: LISTENS</Text></View>
-      </Animated.View>
-
-      {/* COMPANY & PRODUCT INFO SECTION - High value for Web */}
+      {/* PROBLEM & FIX INFO SECTION */}
       <View style={styles.infoSection}>
         <View style={styles.infoBlock}>
           <Text style={styles.infoLabel}>THE PROBLEM</Text>
           <Text style={styles.infoTitle}>Dating is noisy.</Text>
           <Text style={styles.infoBody}>
-            Modern dating apps offer volume, not clarity. We spend hours decoding screenshots with friends, often ignoring what's right in front of us.
+            Modern apps offer volume, not clarity. We spend hours decoding screenshots with friends, often ignoring the red flags right in front of us.
           </Text>
         </View>
 
@@ -116,7 +136,7 @@ export default function LandingPage() {
           <Text style={styles.infoLabel}>THE FIX</Text>
           <Text style={styles.infoTitle}>Signal Intelligence.</Text>
           <Text style={styles.infoBody}>
-            REDFLAGS converts fragmented input into structured risk signals. It’s not just an analyzer; it’s a second brain for your intuition.
+            NOREDFLAGS converts fragmented input into structured risk signals. It’s a second brain for your intuition that maps their words to your personal standard.
           </Text>
         </View>
       </View>
@@ -125,14 +145,14 @@ export default function LandingPage() {
       <View style={styles.footer}>
         <View style={styles.footerBrand}>
           <Text style={styles.footerLogo}>NOREDFLAGS</Text>
-          <Text style={styles.footerMotto}>Real-time Emotional Intelligence.</Text>
+          <Text style={styles.footerMotto}>Capture what was said. Reveal what it might mean.</Text>
         </View>
 
         <View style={styles.footerLinksRow}>
-           <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
-           <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
-           <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support & Contact</Text></TouchableOpacity>
-           <TouchableOpacity onPress={() => Linking.openURL('https://x.com/noredflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
+          <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
+          <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => Linking.openURL('https://x.com/noredflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
         </View>
 
         <Text style={styles.footerCopyright}>© {new Date().getFullYear()} JEDI LLC. All rights reserved.</Text>
@@ -168,16 +188,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -1,
   },
-  navProLink: {
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  navProText: {
-    color: Colors.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
   navLogin: {
     color: '#ffffff',
     fontSize: 16,
@@ -197,9 +207,9 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   heroSuper: {
-    color: Colors.textMuted,
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#EAB308',
+    fontSize: 14,
+    fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 16,
@@ -227,12 +237,34 @@ const styles = StyleSheet.create({
   },
   heroDescription: {
     color: '#888888',
-    fontSize: isMobile ? 18 : 24,
+    fontSize: isMobile ? 18 : 22,
     fontWeight: '500',
-    lineHeight: 32,
+    lineHeight: 30,
     textAlign: 'center',
     maxWidth: 700,
     marginBottom: 48,
+  },
+  ctaContainer: {
+    width: isMobile ? '100%' : 'auto',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  primaryButton: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 22,
+    paddingHorizontal: 64,
+    borderRadius: 999,
+    width: isMobile ? '100%' : 'auto',
+    alignItems: 'center',
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+  },
+  primaryButtonText: {
+    color: '#000000',
+    fontSize: 22,
+    fontWeight: '900',
   },
   webDownloadRow: {
     flexDirection: isMobile ? 'column' : 'row',
@@ -259,90 +291,61 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 10,
     textTransform: 'uppercase',
-    fontWeight: '600',
   },
   storeBadgeMain: {
     color: '#fff',
     fontSize: 20,
     fontWeight: '800',
-    letterSpacing: -0.5,
   },
-  ctaContainer: {
-    width: isMobile ? '100%' : 'auto',
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 20,
-    paddingHorizontal: 48,
-    borderRadius: 999,
-    width: isMobile ? '100%' : 'auto',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#000000',
-    fontSize: 20,
+  sectionHeader: {
+    color: '#555',
+    fontSize: 12,
     fontWeight: '900',
-  },
-  floatingCard: {
+    letterSpacing: 2,
+    marginBottom: 24,
     marginTop: 40,
+  },
+  demoContainer: {
     width: '100%',
-    maxWidth: 500,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    maxWidth: 600,
+    padding: 32,
+    borderRadius: 32,
+    borderWidth: 2,
     alignItems: 'center',
-  },
-  cardRed: {
-    alignSelf: isMobile ? 'center' : 'flex-start',
-    marginLeft: isMobile ? 0 : '10%',
-  },
-  cardGreen: {
-    alignSelf: isMobile ? 'center' : 'flex-end',
-    marginRight: isMobile ? 0 : '10%',
-    marginTop: 20,
     marginBottom: 80,
   },
-  floatingText: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '600',
-    fontStyle: 'italic',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  badgeRed: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-  },
-  badgeGreen: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-  },
-  badgeText: {
-    color: '#ffffff',
-    fontWeight: '800',
+  demoLabel: {
+    color: '#fff',
     fontSize: 12,
-  },
-  badgeTextInverse: {
-    color: '#000',
     fontWeight: '900',
-    fontSize: 12,
+    marginBottom: 20,
+    letterSpacing: 1,
+  },
+  demoText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 32,
+    minHeight: 64,
+  },
+  demoWaveform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 40,
+  },
+  waveBar: {
+    width: 6,
+    borderRadius: 3,
   },
   infoSection: {
     width: '100%',
     maxWidth: 1000,
     flexDirection: isMobile ? 'column' : 'row',
     gap: 48,
-    marginTop: 80,
+    marginTop: 40,
     paddingTop: 80,
     borderTopWidth: 1,
     borderColor: '#222',
@@ -352,7 +355,7 @@ const styles = StyleSheet.create({
     alignItems: isMobile ? 'center' : 'flex-start',
   },
   infoLabel: {
-    color: Colors.maxRisk,
+    color: '#EF4444',
     fontSize: 12,
     fontWeight: '900',
     marginBottom: 12,
@@ -366,41 +369,10 @@ const styles = StyleSheet.create({
     textAlign: isMobile ? 'center' : 'left',
   },
   infoBody: {
-    color: Colors.textMuted,
+    color: '#888',
     fontSize: 18,
     lineHeight: 28,
     textAlign: isMobile ? 'center' : 'left',
-  },
-  companySection: {
-    width: '100%',
-    maxWidth: 800,
-    alignItems: 'center',
-    marginTop: 120,
-    padding: 48,
-    backgroundColor: '#111',
-    borderRadius: 32,
-    borderWidth: 1,
-    borderColor: '#222',
-  },
-  companyLabel: {
-    color: '#555',
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 16,
-    letterSpacing: 2,
-  },
-  companyTitle: {
-    color: '#fff',
-    fontSize: 48,
-    fontWeight: '900',
-    marginBottom: 24,
-    letterSpacing: -1,
-  },
-  companyDescription: {
-    color: '#888',
-    fontSize: 18,
-    textAlign: 'center',
-    lineHeight: 28,
   },
   footer: {
     marginTop: 120,
