@@ -6,33 +6,31 @@ import { Colors } from '../../constants/colors';
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [aboutYou, setAboutYou] = useState('');
-  const [partnerGoals, setPartnerGoals] = useState('');
 
   const handleSignUp = () => {
     console.log("Registered with email: ", email);
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleAppleSignUp = () => {
     console.log("Registered with Apple");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleGoogleSignUp = () => {
     console.log("Registered with Google");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   const handleGuestSignUp = () => {
     console.log("Continuing as Anonymous Guest");
-    router.replace('/capture/live-input');
+    router.replace('/onboarding');
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Let's get Personal! 💖</Text>
-      <Text style={styles.subtitle}>Stop wasting time. Tell us exactly who you are and what makes someone a *Green for Go*! We'll use your answers to customize your red flags. 🚦</Text>
+      <Text style={styles.title}>Welcome! 💖</Text>
+      <Text style={styles.subtitle}>Create an account to build your permanent Relationship Lens and unlock AI emotional intelligence.</Text>
 
       <TouchableOpacity style={styles.oauthButton} onPress={handleAppleSignUp}>
         <Text style={styles.oauthButtonText}> Sign up with Apple</Text>
@@ -66,28 +64,8 @@ export default function SignUp() {
         secureTextEntry
       />
 
-      <Text style={styles.label}>Who are you? 🌟</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Ex: I'm a creative who values independence..."
-        placeholderTextColor={Colors.textMuted}
-        value={aboutYou}
-        onChangeText={setAboutYou}
-        multiline
-      />
-
-      <Text style={styles.label}>What's your Green Light? 🟢</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Ex: Someone who communicates openly and isn't afraid of commitment."
-        placeholderTextColor={Colors.textMuted}
-        value={partnerGoals}
-        onChangeText={setPartnerGoals}
-        multiline
-      />
-
       <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Create My Filter</Text>
+        <Text style={styles.buttonText}>Build My Lens</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.guestLink} onPress={handleGuestSignUp}>
@@ -175,10 +153,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
     marginBottom: 8,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
   },
   button: {
     backgroundColor: Colors.border,

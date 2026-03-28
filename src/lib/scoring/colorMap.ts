@@ -1,16 +1,23 @@
 import { Colors } from '../../constants/colors';
+import { RiskLevel } from './riskWeights';
 
 /**
- * Returns the color associated with a risk score mapping.
+ * Returns the color associated with a classification type.
  * Color = meaning.
  */
-export function getScoreColor(score: number): string {
-  if (score === 0) return Colors.safe;
-  if (score <= 5) return Colors.caution;
-  if (score <= 15) return Colors.warning;
-  if (score <= 25) return Colors.escalation1;
-  if (score <= 40) return Colors.escalation2;
-  if (score <= 60) return Colors.escalation3;
-  if (score <= 80) return Colors.escalation4;
-  return Colors.maxRisk;
+export function getScoreColor(classification: RiskLevel | string): string {
+  switch (classification) {
+    case 'Green Flag':
+    case 'Personal Match':
+      return Colors.safe; // 🟢 Safe
+    case 'Yellow Flag':
+    case 'Needs Clarification':
+      return Colors.caution; // 🟡 Caution
+    case 'Personal Mismatch':
+      return Colors.warning; // 🟠 Warning
+    case 'Red Flag':
+      return Colors.maxRisk; // 🔴 Max Risk
+    default:
+      return Colors.textMuted;
+  }
 }

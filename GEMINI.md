@@ -210,6 +210,50 @@ Firebase Authentication
 - Clean integration with Firestore and subscriptions
 - Strong fit for a private, emotionally sensitive product
 
+## PERSONALIZATION LAYER
+
+### Core Principle
+REDFLAGS should not treat every trait as universally good or bad.
+The system should interpret signals through the user’s stated relationship goals, standards, and dealbreakers.
+
+### Purpose
+This keeps the user honest about what they want and allows the app to generate more accurate, personalized insights.
+
+### Profile Setup
+After signup, each user creates a Relationship Lens profile.
+
+### Relationship Lens includes:
+- who they are
+- who they date
+- relationship goals
+- monogamy vs non-monogamy preference
+- desire for children
+- openness to partners with children
+- financial stability importance
+- ambition importance
+- lifestyle preferences
+- hard dealbreakers
+- soft concerns
+
+### AI Interpretation Layers
+1. Universal caution signals
+2. Personal mismatch signals
+3. Personal match signals
+4. Contextual offsets
+
+### Output Types
+- Red Flag
+- Yellow Flag
+- Green Flag
+- Personal Mismatch
+- Personal Match
+- Needs Clarification
+
+### Product Rule
+A trait should not be labeled a red flag unless it is:
+- broadly concerning across contexts, or
+- directly inconsistent with the user’s stated preferences
+
 ## FINAL TRUTH
 
 REDFLAGS is a second brain for dating.
