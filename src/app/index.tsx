@@ -299,6 +299,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
   },
   cardRed: {
     alignSelf: isMobile ? 'center' : 'flex-start',
@@ -316,13 +317,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
     marginBottom: 16,
+    textAlign: 'center',
   },
   badgeRed: {
     backgroundColor: Colors.text,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 999,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   badgeGreen: {
     backgroundColor: 'transparent',
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 999,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   badgeText: {
     color: '#ffffff',
@@ -380,6 +382,7 @@ const styles = StyleSheet.create({
     padding: 32,
     borderWidth: 1,
     borderColor: '#333',
+    alignItems: 'center',
   },
   planCardPro: {
     backgroundColor: '#fff',
@@ -389,6 +392,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: '900',
+    textAlign: 'center',
   },
   planTitlePro: {
     color: '#000',
@@ -397,6 +401,7 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
     marginBottom: 24,
+    textAlign: 'center',
   },
   planTaglinePro: {
     color: '#555',
@@ -405,6 +410,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 48,
     fontWeight: '900',
+    textAlign: 'center',
   },
   planPricePro: {
     color: '#000',
@@ -420,6 +426,7 @@ const styles = StyleSheet.create({
     color: '#555',
     fontSize: 14,
     marginBottom: 32,
+    textAlign: 'center',
   },
   planSubPricePro: {
     color: '#888',
@@ -428,10 +435,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 12,
     marginBottom: 40,
+    alignItems: 'center',
   },
   featureItem: {
     color: '#ccc',
     fontSize: 16,
+    textAlign: 'center',
   },
   featureItemPro: {
     color: '#333',
