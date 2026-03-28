@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { LensService } from '../../lib/onboarding/lensService';
+import { auth } from '../../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { ActivityIndicator, Alert } from 'react-native';
 
 // Simple select pseudo-buttons for the Lens
 const SelectOption = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => (
@@ -25,12 +29,41 @@ export default function OnboardingLens() {
     softConcerns: ''
   });
 
-  const updateLens = (key: string, val: string) => setLens(prev => ({ ...prev, [key]: val }));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFinish = () => {
-    console.log("Saving Relationship Lens...", lens);
-    // Move to capturing signals
-    router.replace('/capture/live-input');
+  const updateLens = (key: string, val: string) => {
+    setLens(prev => ({ ...prev, [key]: val }));
+    if (error) setError(null);
+  };
+
+  const handleFinish = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let user = auth.currentUser;
+      
+      // If no session exists, initialize an anonymous guest session 
+      // per GEMINI.md requirements for low-friction onboarding.
+      if (!user) {
+        console.log("Initializing Anonymous Guest Session...");
+        const cred = await signInAnonymously(auth);
+        user = cred.user;
+      }
+
+      console.log("Saving Relationship Lens...", lens);
+      await LensService.saveLens(lens);
+      
+      // Move to capturing signals
+      router.replace('/capture/live-input');
+    } catch (e: any) {
+      console.error("Error saving lens:", e);
+      setError(e.message || "Failed to save Relationship Lens. Please try again.");
+      Alert.alert("Submission Error", e.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,8 +122,14 @@ export default function OnboardingLens() {
       <Text style={styles.label}>Soft Concerns</Text>
       <TextInput style={[styles.input, styles.textArea]} placeholderTextColor={Colors.textMuted} placeholder="e.g. Poor texter but good in person" multiline value={lens.softConcerns} onChangeText={t => updateLens('softConcerns', t)} />
 
-      <TouchableOpacity style={styles.button} onPress={handleFinish}>
-        <Text style={styles.buttonText}>Activate Lens</Text>
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <TouchableOpacity style={styles.button} onPress={handleFinish} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color={Colors.background} />
+        ) : (
+          <Text style={styles.buttonText}>Activate Lens</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -173,5 +212,11 @@ const styles = StyleSheet.create({
     color: Colors.background,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#EF4444',
+    marginTop: 20,
+    textAlign: 'center',
+    fontWeight: '600',
   }
 });

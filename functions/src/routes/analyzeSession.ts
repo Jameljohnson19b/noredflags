@@ -16,8 +16,16 @@ export const analyzeSessionHandler = async (req: Request, res: Response): Promis
        return;
     }
 
+    // FETCH THE RELATIONSHIP LENS:
+    // This is the core engine of REDFLAGS. We pull the user's specific preferences 
+    // to map the AI analysis strictly to their personal goals/dealbreakers.
+    const lensRef = db.collection('users').doc(userId).collection('profile').doc('lens');
+    const lensSnap = await lensRef.get();
+    
+    const activeLens = lensSnap.exists ? lensSnap.data() : userContext;
+
     // Capture what was said. Reveal what it might mean.
-    const analysis = await DeepSeekService.analyzeStatement(statement, userContext);
+    const analysis = await DeepSeekService.analyzeStatement(statement, activeLens);
 
     const signalData = {
       content: statement,

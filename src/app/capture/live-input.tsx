@@ -1,14 +1,51 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Colors } from '../../constants/colors';
+import { AnalysisService } from '../../lib/capture/analysisService';
+import { router, useLocalSearchParams } from 'expo-router';
+import { auth } from '../../lib/firebase';
 
 export default function LiveInputScreen() {
+  const { sessionId = 'default_session' } = useLocalSearchParams<{ sessionId?: string }>();
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCapture = () => {
-    // Will integrate with classifyStatement and DeepSeek later
-    console.log('Captured:', input);
-    setInput('');
+  const handleCapture = async () => {
+    if (!input.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("Please log in to capture signals.");
+
+      console.log('Analyzing Signal:', input);
+      const res = await AnalysisService.analyzeSignal(input, sessionId);
+
+      if (res.success && res.signal) {
+        setInput('');
+        // Push to psychology read with the analysis results
+        router.push({
+          pathname: '/reports/psychology-read',
+          params: { 
+            riskLevel: res.signal.riskLevel,
+            reasoning: res.signal.reasoning,
+            confidence: res.signal.confidence.toString(),
+            content: res.signal.content
+          }
+        });
+      } else {
+        throw new Error(res.error || "Signal analysis failed.");
+      }
+    } catch (e: any) {
+      console.error('Capture Error:', e);
+      setError(e.message);
+      Alert.alert("Analysis Error", e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,12 +63,18 @@ export default function LiveInputScreen() {
         />
       </View>
 
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
       <TouchableOpacity 
-        style={[styles.button, !input.trim() && styles.buttonDisabled]} 
+        style={[styles.button, (!input.trim() || loading) && styles.buttonDisabled]} 
         onPress={handleCapture}
-        disabled={!input.trim()}
+        disabled={!input.trim() || loading}
       >
-        <Text style={styles.buttonText}>Capture Signal</Text>
+        {loading ? (
+          <ActivityIndicator color={Colors.background} />
+        ) : (
+          <Text style={styles.buttonText}>Capture Signal</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -80,4 +123,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorText: {
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '600',
+  }
 });
