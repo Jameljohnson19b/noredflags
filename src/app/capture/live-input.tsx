@@ -36,7 +36,11 @@ export default function LiveInputScreen() {
   }, []);
 
   const handleCapture = async () => {
-    if (!input.trim()) return;
+    console.log("[LiveInput] Clicked Check for Flags. Current input length:", input.trim().length);
+    if (!input.trim()) {
+      console.warn("[LiveInput] Empty input. Returning.");
+      return;
+    }
     
     setLoading(true);
     setError(null);
@@ -45,13 +49,16 @@ export default function LiveInputScreen() {
       const user = auth.currentUser;
       const isDev = process.env.EXPO_PUBLIC_ENVIRONMENT === 'development';
 
-      if (!user && !isDev) throw new Error("Please log in to capture signals.");
+      if (!user && !isDev) {
+        console.error("[LiveInput] Access Denied: No user found.");
+        throw new Error("Please log in to capture signals.");
+      }
 
-      console.log('Analyzing Signal:', input);
+      console.log('[LiveInput] Firing analysis for:', input);
       const res = await AnalysisService.analyzeSignal(input, sessionId);
 
       if (res.success && res.signal) {
-        console.log("Analysis Success! Moving to Psychology Read...");
+        console.log("[LiveInput] Analysis Success! Progressing to report screen...");
         setInput('');
         
         // Push to psychology read with the analysis results
@@ -65,10 +72,11 @@ export default function LiveInputScreen() {
           }
         });
       } else {
+        console.error("[LiveInput] Service failed:", res.error);
         throw new Error(res.error || "Signal analysis failed.");
       }
     } catch (e: any) {
-      console.error('Capture Error:', e);
+      console.error('[LiveInput] Caught Exception:', e);
       setError(e.message);
       Alert.alert("Analysis Error", e.message);
     } finally {
@@ -99,7 +107,7 @@ export default function LiveInputScreen() {
         disabled={!input.trim() || loading}
       >
         {loading ? (
-          <ActivityIndicator color={Colors.background} />
+          <ActivityIndicator color={Colors.text} />
         ) : (
           <Text style={styles.buttonText}>CHECK FOR FLAGS</Text>
         )}

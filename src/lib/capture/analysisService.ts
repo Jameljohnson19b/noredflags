@@ -20,10 +20,14 @@ export class AnalysisService {
    * Connects the Relationship Lens automatically via the userId.
    */
   static async analyzeSignal(statement: string, sessionId: string): Promise<SignalResponse> {
+    const environment = process.env.EXPO_PUBLIC_ENVIRONMENT;
+    console.log(`[AnalysisService] Environment: ${environment}`);
+    console.log(`[AnalysisService] Target URL: ${this.CLOUD_FUNCTION_URL}`);
+
     // MOCK RESPONSE FOR LOCAL SIMULATOR TESTING:
     // This allows the user to test the Audit -> Report flow even if the 
-    // backend is not reachable at 127.0.0.1.
-    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
+    // backend is not reachable or in dev mode.
+    if (environment === 'development') {
       console.warn("Dev Mode: Simulating DeepSeek Analysis...");
       await new Promise(r => setTimeout(r, 1500)); // Simulate AI latency
       return { 
@@ -39,11 +43,19 @@ export class AnalysisService {
     }
 
     const user = auth.currentUser;
-    if (!user) throw new Error("Auth required to analyze signals.");
-
-    const idToken = await user.getIdToken();
+    if (!user) {
+      console.error("[AnalysisService] No user found in Auth.");
+      return { success: false, error: "Authentication required to analyze signals." };
+    }
 
     try {
+      const idToken = await user.getIdToken();
+      
+      // Add a timeout to the fetch to prevent "nothing happened" scenarios
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+      console.log(`[AnalysisService] Sending request to backend...`);
       const response = await fetch(this.CLOUD_FUNCTION_URL, {
         method: 'POST',
         headers: {
@@ -54,18 +66,26 @@ export class AnalysisService {
           statement,
           sessionId,
           userId: user.uid
-        })
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+      
       const data = await response.json();
+      console.log(`[AnalysisService] Backend Response Received:`, data);
       
       if (!response.ok) {
-        return { success: false, error: data.error || "Analysis failed." };
+        return { success: false, error: data.error || `Server Error: ${response.status}` };
       }
 
       return { success: true, signal: data.signal };
     } catch (e: any) {
-      console.error("Analysis Service Error:", e);
+      if (e.name === 'AbortError') {
+        console.error("[AnalysisService] Request Timed Out.");
+        return { success: false, error: "Analysis timed out. Is the backend server running?" };
+      }
+      console.error("[AnalysisService] Error:", e);
       return { success: false, error: e.message };
     }
   }
