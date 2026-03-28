@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
 
@@ -29,7 +29,10 @@ export default function LandingPage() {
       
       {/* Navbar Placeholder */}
       <View style={styles.nav}>
-        <Text style={styles.navLogo}>REDFLAGS</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Image source={require('../../assets/images/logo.png')} style={{ width: 36, height: 36, resizeMode: 'contain' }} />
+          <Text style={styles.navLogo}>REDFLAGS</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
           <Text style={styles.navLogin}>Log In</Text>
         </TouchableOpacity>
@@ -58,7 +61,7 @@ export default function LandingPage() {
         <View style={styles.badgeRed}><Text style={styles.badgeTextInverse}>🚩 RED FLAG: TIME WASTER</Text></View>
       </Animated.View>
 
-      <Animated.View style={[styles.floatingCard, styles.cardGreen, floatStyle, { animationDelay: '1s' as any }]}>
+      <Animated.View style={[styles.floatingCard, styles.cardGreen, floatStyle]}>
         <Text style={styles.floatingText}>"I bought us tickets to that band you mentioned!"</Text>
         <View style={styles.badgeGreen}><Text style={styles.badgeText}>🟢 GREEN FLAG: LISTENS</Text></View>
       </Animated.View>
@@ -135,8 +138,6 @@ const styles = StyleSheet.create({
     textShadowColor: '#ffffff',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 1,
-    WebkitTextStrokeWidth: 2,
-    WebkitTextStrokeColor: '#ffffff',
     marginBottom: 24,
   },
   heroDescription: {
