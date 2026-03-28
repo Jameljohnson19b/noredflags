@@ -1,1 +1,26 @@
-node_modules
+node_modules/
+.expo/
+dist/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Mac
+.DS_Store
+
+# Environments
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+*.env
+
+# Firebase
+.firebase/
+functions/node_modules/
+functions/lib/
+firebase-debug.log
+firebase-debug.*.log
+functions/.env
+functions/.env.local
