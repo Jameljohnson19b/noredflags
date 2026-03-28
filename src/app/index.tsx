@@ -144,7 +144,7 @@ export default function LandingPage() {
         <View style={styles.footerLinksRow}>
            <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
            <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
-           <TouchableOpacity><Text style={styles.footerLink}>Contact API</Text></TouchableOpacity>
+           <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support & Contact</Text></TouchableOpacity>
            <TouchableOpacity><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
            <TouchableOpacity><Text style={styles.footerLink}>Instagram</Text></TouchableOpacity>
         </View>
