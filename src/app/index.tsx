@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
+const isWeb = Platform.OS === 'web';
 
 export default function LandingPage() {
   const floatAnim = React.useRef(new Animated.Value(0)).current;
@@ -12,8 +13,8 @@ export default function LandingPage() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 2500, useNativeDriver: true })
+        Animated.timing(floatAnim, { toValue: 1, duration: 2500, useNativeDriver: isWeb ? false : true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 2500, useNativeDriver: isWeb ? false : true })
       ])
     ).start();
   }, [floatAnim]);
@@ -22,6 +23,14 @@ export default function LandingPage() {
     transform: [{
       translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -15] })
     }]
+  };
+
+  const openAppStore = () => {
+    Linking.openURL('https://apps.apple.com/app/redflags');
+  };
+
+  const openPlayStore = () => {
+    Linking.openURL('https://play.google.com/store/apps/details?id=com.noredflags');
   };
 
   return (
@@ -34,9 +43,11 @@ export default function LandingPage() {
           <Text style={styles.navLogo}>REDFLAGS</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 16 }}>
-          <TouchableOpacity onPress={() => router.push('/paywall/pro')} style={styles.navProLink}>
-            <Text style={styles.navProText}>Upgrade to Pro</Text>
-          </TouchableOpacity>
+          {!isWeb && (
+            <TouchableOpacity onPress={() => router.push('/paywall/pro')} style={styles.navProLink}>
+              <Text style={styles.navProText}>Upgrade to Pro</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
             <Text style={styles.navLogin}>Log In</Text>
           </TouchableOpacity>
@@ -50,20 +61,37 @@ export default function LandingPage() {
         <Text style={styles.heroTitleOutlined}>WHO THEY ARE.</Text>
         
         <Text style={styles.heroDescription}>
-          The ultimate social intelligence tool. We decode their texts, map their traits to your own Relationship Lens, and tell you if it's a 🟢 Green Light or a 🔴 Red Flag.
+          REDFLAGS is a real-time dating signal interpreter. We decode their texts, map their traits to your own Relationship Lens, and reveal what it might mean.
         </Text>
 
-        <View style={styles.ctaContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/paywall/pro')}>
-            <Text style={styles.primaryButtonText}>Build Your Filter Now</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* App Store Download Badges removed for native builds */}
+        {isWeb ? (
+          <View style={styles.webDownloadRow}>
+            <TouchableOpacity style={styles.storeBadge} onPress={openAppStore}>
+              <Text style={styles.storeBadgeIcon}></Text>
+              <View>
+                <Text style={styles.storeBadgeSub}>Download on the</Text>
+                <Text style={styles.storeBadgeMain}>App Store</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.storeBadge} onPress={openPlayStore}>
+              <Text style={styles.storeBadgeIcon}>▶</Text>
+              <View>
+                <Text style={styles.storeBadgeSub}>Get it on</Text>
+                <Text style={styles.storeBadgeMain}>Google Play</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.ctaContainer}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/paywall/pro')}>
+              <Text style={styles.primaryButtonText}>Build Your Filter Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       </View>
 
-      {/* Floating Demo Elements replicating gen-z dynamic layouts */}
+      {/* Floating Demo Elements */}
       <Animated.View style={[styles.floatingCard, styles.cardRed, floatStyle]}>
         <Text style={styles.floatingText}>"I'm not looking for anything serious rn but..."</Text>
         <View style={styles.badgeRed}><Text style={styles.badgeTextInverse}>🚩 RED FLAG: TIME WASTER</Text></View>
@@ -74,63 +102,46 @@ export default function LandingPage() {
         <View style={styles.badgeGreen}><Text style={styles.badgeText}>🟢 GREEN FLAG: LISTENS</Text></View>
       </Animated.View>
 
-      {/* PAYWALL PRICING SECTION */}
-      <View style={styles.pricingSection}>
-        <Text style={styles.pricingSectionHeader}>UNLOCK YOUR DATING BRAIN</Text>
-        <Text style={styles.pricingSectionDesc}>Get your first 3 days free. Then choose how deep you want to go.</Text>
+      {/* COMPANY & PRODUCT INFO SECTION - High value for Web */}
+      <View style={styles.infoSection}>
+        <View style={styles.infoBlock}>
+          <Text style={styles.infoLabel}>THE PROBLEM</Text>
+          <Text style={styles.infoTitle}>Dating is noisy.</Text>
+          <Text style={styles.infoBody}>
+            Modern dating apps offer volume, not clarity. We spend hours decoding screenshots with friends, often ignoring what's right in front of us.
+          </Text>
+        </View>
 
-        <View style={styles.plansContainer}>
-            {/* CORE TIER */}
-            <View style={styles.planCard}>
-              <Text style={styles.planTitle}>CORE</Text>
-              <Text style={styles.planTagline}>Don't second guess what you already felt.</Text>
-              <Text style={styles.planPrice}>$2.99<Text style={styles.planInterval}>/week</Text></Text>
-              <Text style={styles.planSubPrice}>or $29.99/year</Text>
-              
-              <View style={styles.featureList}>
-                <Text style={styles.featureItem}>✓ Real-time risk scoring</Text>
-                <Text style={styles.featureItem}>✓ Green/Red color mapping</Text>
-                <Text style={styles.featureItem}>✓ Basic AI clarification</Text>
-              </View>
-
-              <TouchableOpacity style={styles.planButton} onPress={() => router.push('/paywall/core')}>
-                <Text style={styles.planButtonText}>Get Core</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* PRO TIER */}
-            <View style={[styles.planCard, styles.planCardPro]}>
-              <Text style={[styles.planTitle, styles.planTitlePro]}>PRO</Text>
-              <Text style={[styles.planTagline, styles.planTaglinePro]}>Now let's break it down.</Text>
-              <Text style={[styles.planPrice, styles.planPricePro]}>$9.99<Text style={styles.planIntervalPro}>/mo</Text></Text>
-              <Text style={[styles.planSubPrice, styles.planSubPricePro]}>or $45.99/year</Text>
-              
-              <View style={styles.featureList}>
-                <Text style={[styles.featureItem, styles.featureItemPro]}>✓ Everything in Core</Text>
-                <Text style={[styles.featureItem, styles.featureItemPro]}>✓ Custom Relationship Lens setup</Text>
-                <Text style={[styles.featureItem, styles.featureItemPro]}>✓ Advanced Psychological reporting</Text>
-              </View>
-
-              <TouchableOpacity style={[styles.planButton, styles.planButtonActionPro]} onPress={() => router.push('/paywall/pro')}>
-                <Text style={styles.planButtonTextPro}>Unlock Pro Analytics</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.infoBlock}>
+          <Text style={styles.infoLabel}>THE FIX</Text>
+          <Text style={styles.infoTitle}>Signal Intelligence.</Text>
+          <Text style={styles.infoBody}>
+            REDFLAGS converts fragmented input into structured risk signals. It’s not just an analyzer; it’s a second brain for your intuition.
+          </Text>
         </View>
       </View>
 
-      {/* MASSIVE FOOTER */}
+      {/* 19B PROJECTS COMPANY SECTION */}
+      <View style={styles.companySection}>
+        <Text style={styles.companyLabel}>PRODUCED BY</Text>
+        <Text style={styles.companyTitle}>19B PROJECTS</Text>
+        <Text style={styles.companyDescription}>
+          We build tools that capture what was said and reveal what it might mean. Focused on real-time emotional intelligence for the modern era.
+        </Text>
+      </View>
+
+      {/* FOOTER */}
       <View style={styles.footer}>
         <View style={styles.footerBrand}>
           <Text style={styles.footerLogo}>REDFLAGS</Text>
-          <Text style={styles.footerMotto}>Capture what was said. Reveal what it might mean.</Text>
+          <Text style={styles.footerMotto}>Real-time Emotional Intelligence.</Text>
         </View>
 
         <View style={styles.footerLinksRow}>
            <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
            <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
            <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support & Contact</Text></TouchableOpacity>
-           <TouchableOpacity><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
-           <TouchableOpacity><Text style={styles.footerLink}>Instagram</Text></TouchableOpacity>
+           <TouchableOpacity onPress={() => Linking.openURL('https://x.com/redflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
         </View>
 
         <Text style={styles.footerCopyright}>© {new Date().getFullYear()} 19B PROJECTS. All rights reserved.</Text>
@@ -143,7 +154,7 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Wizz style stark dark mode
+    backgroundColor: '#000000',
   },
   content: {
     padding: 24,
@@ -192,6 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: isMobile ? 20 : 60,
     zIndex: 10,
+    marginBottom: 60,
   },
   heroSuper: {
     color: Colors.textMuted,
@@ -231,12 +243,42 @@ const styles = StyleSheet.create({
     maxWidth: 700,
     marginBottom: 48,
   },
-  ctaContainer: {
-    flexDirection: 'row',
+  webDownloadRow: {
+    flexDirection: isMobile ? 'column' : 'row',
     gap: 16,
+    alignItems: 'center',
+  },
+  storeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    borderWidth: 1,
+    borderColor: '#333',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    minWidth: 200,
+  },
+  storeBadgeIcon: {
+    color: '#fff',
+    fontSize: 32,
+    marginRight: 12,
+  },
+  storeBadgeSub: {
+    color: '#888',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  storeBadgeMain: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  ctaContainer: {
     width: isMobile ? '100%' : 'auto',
-    justifyContent: 'center',
-    marginBottom: 32,
+    alignItems: 'center',
   },
   primaryButton: {
     backgroundColor: '#ffffff',
@@ -245,52 +287,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     width: isMobile ? '100%' : 'auto',
     alignItems: 'center',
-    shadowColor: '#ffffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
   },
   primaryButtonText: {
     color: '#000000',
     fontSize: 20,
     fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  appStoreRow: {
-    flexDirection: isMobile ? 'column' : 'row',
-    gap: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  storeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderColor: '#333',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    minWidth: 200,
-  },
-  storeBadgeIcon: {
-    color: '#fff',
-    fontSize: 28,
-    marginRight: 10,
-  },
-  storeBadgeSub: {
-    color: '#888',
-    fontSize: 10,
-    textTransform: 'uppercase',
-  },
-  storeBadgeMain: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.5,
   },
   floatingCard: {
-    position: 'relative',
     marginTop: 40,
     width: '100%',
     maxWidth: 500,
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
     alignSelf: isMobile ? 'center' : 'flex-end',
     marginRight: isMobile ? 0 : '10%',
     marginTop: 20,
-    marginBottom: 60,
+    marginBottom: 80,
   },
   floatingText: {
     color: '#ffffff',
@@ -320,11 +323,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   badgeRed: {
-    backgroundColor: Colors.text,
+    backgroundColor: '#ffffff',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 999,
-    alignSelf: 'center',
   },
   badgeGreen: {
     backgroundColor: 'transparent',
@@ -333,142 +335,88 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 999,
-    alignSelf: 'center',
   },
   badgeText: {
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 12,
-    letterSpacing: 1,
   },
   badgeTextInverse: {
     color: '#000',
     fontWeight: '900',
     fontSize: 12,
-    letterSpacing: 1,
   },
-  pricingSection: {
+  infoSection: {
     width: '100%',
     maxWidth: 1000,
+    flexDirection: isMobile ? 'column' : 'row',
+    gap: 48,
     marginTop: 80,
-    alignItems: 'center',
+    paddingTop: 80,
     borderTopWidth: 1,
     borderColor: '#222',
-    paddingTop: 80,
   },
-  pricingSectionHeader: {
-    color: '#fff',
-    fontSize: 36,
-    fontWeight: '900',
-    letterSpacing: -1,
-    marginBottom: 12,
-  },
-  pricingSectionDesc: {
-    color: '#aaa',
-    fontSize: 18,
-    marginBottom: 48,
-    textAlign: 'center',
-  },
-  plansContainer: {
-    flexDirection: isMobile ? 'column' : 'row',
-    gap: 24,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  planCard: {
+  infoBlock: {
     flex: 1,
-    backgroundColor: '#111',
-    borderRadius: 24,
-    padding: 32,
-    borderWidth: 1,
-    borderColor: '#333',
-    alignItems: 'center',
+    alignItems: isMobile ? 'center' : 'flex-start',
   },
-  planCardPro: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
-  },
-  planTitle: {
-    color: '#fff',
-    fontSize: 24,
+  infoLabel: {
+    color: Colors.maxRisk,
+    fontSize: 12,
     fontWeight: '900',
-    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 1,
   },
-  planTitlePro: {
-    color: '#000',
+  infoTitle: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '900',
+    marginBottom: 16,
+    textAlign: isMobile ? 'center' : 'left',
   },
-  planTagline: {
-    color: '#888',
-    fontSize: 14,
-    marginBottom: 24,
-    textAlign: 'center',
+  infoBody: {
+    color: Colors.textMuted,
+    fontSize: 18,
+    lineHeight: 28,
+    textAlign: isMobile ? 'center' : 'left',
   },
-  planTaglinePro: {
+  companySection: {
+    width: '100%',
+    maxWidth: 800,
+    alignItems: 'center',
+    marginTop: 120,
+    padding: 48,
+    backgroundColor: '#111',
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  companyLabel: {
     color: '#555',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 16,
+    letterSpacing: 2,
   },
-  planPrice: {
+  companyTitle: {
     color: '#fff',
     fontSize: 48,
     fontWeight: '900',
-    textAlign: 'center',
+    marginBottom: 24,
+    letterSpacing: -1,
   },
-  planPricePro: {
-    color: '#000',
-  },
-  planInterval: {
-    fontSize: 16,
+  companyDescription: {
     color: '#888',
-  },
-  planIntervalPro: {
-    color: '#555',
-  },
-  planSubPrice: {
-    color: '#555',
-    fontSize: 14,
-    marginBottom: 32,
+    fontSize: 18,
     textAlign: 'center',
-  },
-  planSubPricePro: {
-    color: '#888',
-  },
-  featureList: {
-    flex: 1,
-    gap: 12,
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  featureItem: {
-    color: '#ccc',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  featureItemPro: {
-    color: '#333',
-  },
-  planButton: {
-    backgroundColor: '#333',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
-  planButtonActionPro: {
-    backgroundColor: '#000',
-  },
-  planButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  planButtonTextPro: {
-    color: '#fff', // Pro button text is white on black background
+    lineHeight: 28,
   },
   footer: {
     marginTop: 120,
     width: '100%',
     borderTopWidth: 1,
     borderColor: '#222',
-    paddingTop: 60,
+    paddingTop: 80,
     paddingBottom: 40,
     alignItems: 'center',
   },
@@ -480,7 +428,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 32,
     fontWeight: '900',
-    letterSpacing: -1,
   },
   footerMotto: {
     color: '#555',
@@ -489,9 +436,8 @@ const styles = StyleSheet.create({
   },
   footerLinksRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 24,
+    gap: 32,
     marginBottom: 40,
   },
   footerLink: {
