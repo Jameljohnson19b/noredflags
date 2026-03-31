@@ -14,9 +14,9 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { LensService } from '../../lib/onboarding/lensService';
-import { auth } from '../../lib/firebase';
-
+import { auth, db } from '../../lib/firebase';
 import { User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function OnboardingLens() {
   const [lens, setLens] = useState({
@@ -55,8 +55,28 @@ export default function OnboardingLens() {
         router.replace('/(auth)/sign-in');
       } else {
         setIsAuthenticated(true);
+        // 🔥 SUBSCRIPTION GUARD: Ensure the user has selected a billing plan (Trial/Core/Pro)
+        // For now, in Mock Mode, we check if they've passed the paywall.
+        // In Prod, we would call RevenueCatService.isSubscribed()
+        checkSubscription(user.uid);
       }
     });
+
+    const checkSubscription = async (uid: string) => {
+      try {
+        // We check the user document to see if they have a purchase confirmation.
+        // This is a safety check to ensure they can't deep-link into the lens for free.
+        const userRef = doc(db, 'users', uid);
+        const snap = await getDoc(userRef);
+        
+        if (!snap.exists() || (!snap.data().isSubscribed && !snap.data().isPro)) {
+           console.log("[Onboarding] Subscription Required. Redirecting to Paywall.");
+           router.replace('/paywall/pro');
+        }
+      } catch (e) {
+        console.error("Subscription check failure:", e);
+      }
+    };
 
     return () => {
       unsubscribe();

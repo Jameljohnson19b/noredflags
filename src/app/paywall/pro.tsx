@@ -5,6 +5,7 @@ import { RevenueCatService } from '../../lib/purchases/revenueCat';
 import { router } from 'expo-router';
 import { auth, db } from '../../lib/firebase';
 import { signOut, signInWithCredential, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LensService } from '../../lib/onboarding/lensService';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -123,6 +124,17 @@ export default function ProPaywallScreen() {
     try {
       const result = await RevenueCatService.purchasePackage(pkg);
       if (result.success) {
+        // 🔥 UPDATE USER DOCUMENT: Flag them as a subscriber to unlock the gated Onboarding.
+        const userUid = auth.currentUser?.uid;
+        if (userUid) {
+          const userRef = doc(db, 'users', userUid);
+          await setDoc(userRef, { 
+            isPro: true, 
+            isSubscribed: true,
+            premiumTier: pkg.identifier || 'pro'
+          }, { merge: true });
+        }
+
         Alert.alert("Welcome to Pro", "Your dating intelligence is now officially unlocked.");
         // After purchase, move to Lens setup.
         router.replace('/onboarding');
