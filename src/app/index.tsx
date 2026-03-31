@@ -65,8 +65,8 @@ export default function LandingPage() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      {/* Navbar Section */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+      {/* Navbar Section - FIXED */}
+      <View style={{ width: '100%', alignItems: 'center' }}>
         <View style={styles.nav}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Image source={require('../../assets/images/logo.png')} style={{ width: 36, height: 36, resizeMode: 'contain' }} />
@@ -75,12 +75,12 @@ export default function LandingPage() {
           <View style={{ flexDirection: 'row', gap: 16 }}>
             {!isWeb && (
               <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
-                <Text style={styles.navLogin}>Settings</Text>
+                <Text style={styles.navLogin}>Sign In</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </div>
+      </View>
 
       {/* Hero Section */}
       <View style={styles.hero}>
@@ -93,8 +93,11 @@ export default function LandingPage() {
         </Text>
 
         <View style={styles.ctaContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={isWeb ? openAppStore : () => router.push('/onboarding')}>
-            <Text style={styles.primaryButtonText}>Try It Free</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={isWeb ? openAppStore : () => router.push('/paywall/pro')}
+          >
+            <Text style={styles.primaryButtonText}>Try It Before You Buy</Text>
           </TouchableOpacity>
         </View>
 
@@ -119,7 +122,7 @@ export default function LandingPage() {
       </View>
 
       {/* CORE MECHANIC DEMO */}
-      <Text style={styles.sectionHeader}>REAL-TIME SIGNAL MODULATION</Text>
+      <Text style={styles.sectionHeader}>REAL-TIME HUMAN ANALYSIS</Text>
       <SignalSystemDemo />
 
       {/* PROBLEM & FIX INFO SECTION */}
@@ -136,7 +139,7 @@ export default function LandingPage() {
           <Text style={styles.infoLabel}>THE FIX</Text>
           <Text style={styles.infoTitle}>Signal Intelligence.</Text>
           <Text style={styles.infoBody}>
-            NOREDFLAGS converts fragmented input into structured risk signals. It’s a second brain for your intuition that maps their words to your personal standard.
+            NOREDFLAGS converts random facts about a person, and assists you in figuring out if they are a good match for you. It’s a second brain for your intuition that maps their words to your personal standard.
           </Text>
         </View>
       </View>

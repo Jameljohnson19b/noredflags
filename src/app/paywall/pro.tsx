@@ -4,15 +4,53 @@ import { Colors } from '../../constants/colors';
 import { RevenueCatService } from '../../lib/purchases/revenueCat';
 import { router } from 'expo-router';
 import { auth } from '../../lib/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LensService } from '../../lib/onboarding/lensService';
+import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function ProPaywallScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [offering, setOffering] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!auth.currentUser && !auth.currentUser.isAnonymous);
+
+  // Google Auth Setup
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    responseType: 'id_token',
+  });
 
   useEffect(() => {
     loadOfferings();
+    const unsubscribe = (auth as any).onAuthStateChanged((user: any) => {
+      setIsAuthenticated(!!user && !user.isAnonymous);
+    });
+    return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      setLoading(true);
+      signInWithCredential(auth, credential)
+        .then(async () => {
+          setIsAuthenticated(true);
+          // NEW FLOW: After social login on paywall, move to Lens setup.
+          router.replace('/onboarding');
+        })
+        .catch((e) => {
+          Alert.alert("Google Sign-In Error", e.message);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [response]);
 
   const loadOfferings = async () => {
     try {
@@ -25,55 +63,67 @@ export default function ProPaywallScreen() {
     }
   };
 
-  const [isAuthenticated, setIsAuthenticated] = useState(!!auth.currentUser && !auth.currentUser.isAnonymous);
+  const handleSocialSignIn = async (providerName: 'apple' | 'google') => {
+    if (providerName === 'google') {
+      if (request) {
+        promptAsync();
+      } else {
+        Alert.alert("Error", "Google Sign-In not ready yet.");
+      }
+      return;
+    }
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsAuthenticated(!!user && !user.isAnonymous);
-    });
-    return unsubscribe;
-  }, []);
-
-  const handleSocialSignIn = async (provider: 'apple' | 'google') => {
-    const { signInAnonymously } = require('firebase/auth');
     setLoading(true);
     try {
-      // FOR SIMULATOR TESTING: 
-      // We first try using real Firebase Auth.
-      console.log(`Simulating Secure Auth with ${provider}...`);
-      await signInAnonymously(auth);
+      const appleResult = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const { identityToken } = appleResult;
+      if (identityToken) {
+        const provider = new OAuthProvider('apple.com');
+        const credential = provider.credential({
+          idToken: identityToken,
+        });
+        await signInWithCredential(auth, credential);
+        setIsAuthenticated(true);
+        // NEW FLOW: After social login on paywall, move to Lens setup.
+        router.replace('/onboarding');
+      }
     } catch (e: any) {
-      console.warn("Cloud Auth Simulation Blocked. Forcing Local Dev Session...", e.message);
-      
-      // FALLBACK: 
-      // If the project doesn't have Anonymous Sign-In enabled, we manually
-      // force the UI into the 'Authenticated' state so the pricing plans show up.
-      setIsAuthenticated(true);
-      
-      // We'll also tell the Lens to use a dev UID if the real user is still null later.
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        console.error("Auth Failure:", e);
+        Alert.alert("Authentication Error", e.message || "Failed to sign in.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handlePurchase = async (pkg: any) => {
+    if (!isAuthenticated) {
+      Alert.alert("Authentication Required", "Please sign in with Apple, Google, or Email below to secure your subscription before purchasing.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await finalizePurchase(pkg);
+      const result = await RevenueCatService.purchasePackage(pkg);
+      if (result.success) {
+        Alert.alert("Welcome to Pro", "Your dating intelligence is now officially unlocked.");
+        // NEW FLOW: After purchase, move to Lens setup.
+        router.replace('/onboarding');
+      } else if (result.error) {
+        Alert.alert("Purchase Failed", result.error);
+      }
     } catch (e) {
       console.error(e);
+      Alert.alert("Error", "An unexpected error occurred during purchase.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const finalizePurchase = async (pkg: any) => {
-    const result = await RevenueCatService.purchasePackage(pkg);
-    if (result.success) {
-      Alert.alert("Welcome to Pro", "Your dating intelligence is now officially unlocked.");
-      router.replace('/onboarding'); // Funnel directly into the Relationship Lens
-    } else if (result.error) {
-      Alert.alert("Purchase Failed", result.error);
     }
   };
 
@@ -84,61 +134,72 @@ export default function ProPaywallScreen() {
           <Text style={styles.closeText}>✕</Text>
         </TouchableOpacity>
 
-        {!isAuthenticated ? (
+        <View style={styles.header}>
+          <Text style={styles.title}>CHOOSE YOUR DEPTH</Text>
+          <Text style={styles.subtitle}>Unlock your 3-day free trial on any plan.</Text>
+        </View>
+
+        <View style={styles.pricingSection}>
+          <Text style={styles.tierHeader}>CORE:</Text>
+          <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'core_weekly' })} disabled={loading}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.masterButtonText}>3-Day Trial then $2.99 / week</Text>
+              <Text style={styles.planSub}>Track 3 people simultaneously.</Text>
+            </View>
+            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'core_yearly' })} disabled={loading}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.masterButtonText}>$29.99 per year</Text>
+              <Text style={styles.planSub}>Lock in the lowest annual rate.</Text>
+            </View>
+            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+          </TouchableOpacity>
+
+          <Text style={styles.tierHeader}>PRO:</Text>
+          <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'pro_monthly' })} disabled={loading}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.masterButtonText}>3-Day Trial then $9.99 / month</Text>
+              <Text style={styles.planSub}>Track 10 people + Advanced Patterns.</Text>
+            </View>
+            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.masterButton, styles.masterButtonFeatured]} onPress={() => handlePurchase({ id: 'pro_yearly' })} disabled={loading}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.masterButtonText, { color: '#000' }]}>$49.99 per year</Text>
+              <Text style={[styles.planSub, { color: '#444' }]}>Unlimited Intelligence Access.</Text>
+            </View>
+            <View style={[styles.selectBadge, { backgroundColor: '#000' }]}><Text style={[styles.selectText, { color: '#fff' }]}>SELECT</Text></View>
+          </TouchableOpacity>
+        </View>
+
+        {!isAuthenticated && (
           <View style={styles.authSection}>
-            <Text style={styles.title}>SECURE YOUR INTEL</Text>
-            <Text style={styles.subtitle}>Sign in with Apple or Google to unlock your reports and start your trial.</Text>
+            <Text style={[styles.title, { fontSize: 24, marginTop: 40 }]}>SECURE YOUR ACCOUNT</Text>
+            <Text style={styles.subtitle}>Sign in to lock in your subscription.</Text>
             
             <View style={styles.authButtons}>
               <TouchableOpacity style={styles.authButton} onPress={() => handleSocialSignIn('apple')}>
-                <Text style={styles.authButtonText}> Continue with Apple</Text>
+                <Text style={styles.authButtonText}> Sign in with Apple</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={[styles.authButton, styles.googleButton]} onPress={() => handleSocialSignIn('google')}>
-                <Text style={styles.googleButtonText}>G Continue with Google</Text>
+                <Text style={styles.googleButtonText}>G Sign in with Google</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={{ marginTop: 12 }} onPress={() => router.push('/(auth)/sign-in')}>
+                <Text style={{ color: '#888', textDecorationLine: 'underline' }}>Already have an account? Log in with Email</Text>
               </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <>
-            <View style={styles.header}>
-              <Text style={styles.title}>CHOOSE YOUR DEPTH</Text>
-              <Text style={styles.subtitle}>Unlock your 3-day free trial on any plan.</Text>
-            </View>
-
-            <View style={styles.pricingSection}>
-              {/* CORE TIER */}
-              <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'core_weekly' })} disabled={loading}>
-                <Text style={styles.masterButtonText}>3-Day Trial then $2.99 per week</Text>
-                <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'core_yearly' })} disabled={loading}>
-                <Text style={styles.masterButtonText}>$29.99 per year</Text>
-                <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
-              </TouchableOpacity>
-
-              {/* PRO TIER */}
-              <Text style={styles.tierHeader}>PRO:</Text>
-              
-              <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'pro_monthly' })} disabled={loading}>
-                <Text style={styles.masterButtonText}>3-Day Trial then $9.99 per month</Text>
-                <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.masterButton, styles.masterButtonFeatured]} onPress={() => handlePurchase({ id: 'pro_yearly' })} disabled={loading}>
-                <Text style={[styles.masterButtonText, { color: '#000' }]}>$49.99 per year</Text>
-                <View style={[styles.selectBadge, { backgroundColor: '#000' }]}><Text style={[styles.selectText, { color: '#fff' }]}>SELECT</Text></View>
-              </TouchableOpacity>
-            </View>
-          </>
         )}
 
         <View style={styles.footerLinks}>
           <TouchableOpacity style={styles.footerLink} onPress={() => RevenueCatService.restorePurchases()}>
             <Text style={styles.footerLinkText}>Restore Purchases</Text>
           </TouchableOpacity>
-          
           <TouchableOpacity style={styles.footerLink} onPress={() => Linking.openURL('https://noredflags.xyz/privacy')}>
             <Text style={styles.footerLinkText}>Privacy Policy</Text>
           </TouchableOpacity>
@@ -159,151 +220,30 @@ export default function ProPaywallScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  content: {
-    padding: 24,
-    paddingTop: 40,
-  },
-  closeButton: {
-    alignSelf: 'flex-end',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  header: {
-    marginTop: 20,
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 36,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  subtitle: {
-    color: '#888',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  pricingSection: {
-    marginTop: 40,
-    gap: 8,
-  },
-  tierHeader: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '900',
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  masterButton: {
-    backgroundColor: '#111',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#333',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  masterButtonFeatured: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
-  },
-  masterButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    flex: 1,
-    textAlign: 'left',
-  },
-  selectBadge: {
-    backgroundColor: '#333',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginLeft: 12,
-  },
-  selectText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  authSection: {
-    marginTop: 60,
-    alignItems: 'center',
-  },
-  authButtons: {
-    width: '100%',
-    gap: 16,
-    marginTop: 40,
-  },
-  authButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: 'center',
-    width: '100%',
-  },
-  authButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  googleButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  googleButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-    marginTop: 40,
-  },
-  footerLink: {
-    padding: 8,
-  },
-  footerLinkText: {
-    color: '#555',
-    fontSize: 13,
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-  },
-  legal: {
-    color: '#333',
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 24,
-    lineHeight: 16,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
-  }
+  container: { flex: 1, backgroundColor: '#000' },
+  content: { padding: 24, paddingTop: 40 },
+  closeButton: { alignSelf: 'flex-end', width: 44, height: 44, borderRadius: 22, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' },
+  closeText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  header: { marginTop: 20, marginBottom: 40, alignItems: 'center' },
+  title: { color: '#fff', fontSize: 36, fontWeight: '900', letterSpacing: -1 },
+  subtitle: { color: '#888', fontSize: 16, fontWeight: '600', marginTop: 8 },
+  pricingSection: { marginTop: 40, gap: 8 },
+  tierHeader: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 24, marginBottom: 12 },
+  masterButton: { backgroundColor: '#111', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: '#333', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  masterButtonFeatured: { backgroundColor: '#fff', borderColor: '#fff' },
+  masterButtonText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: -0.5, flex: 1, textAlign: 'left' },
+  selectBadge: { backgroundColor: '#333', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 12 },
+  selectText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  authSection: { marginTop: 60, alignItems: 'center' },
+  authButtons: { width: '100%', gap: 16, marginTop: 40 },
+  authButton: { backgroundColor: '#fff', paddingVertical: 18, borderRadius: 16, alignItems: 'center', width: '100%' },
+  authButtonText: { color: '#000', fontSize: 16, fontWeight: '900' },
+  googleButton: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#333' },
+  googleButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+  footerLinks: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 40 },
+  footerLink: { padding: 8 },
+  footerLinkText: { color: '#555', fontSize: 13, fontWeight: 'bold', textDecorationLine: 'underline' },
+  planSub: { color: '#666', fontSize: 12, fontWeight: '600', marginTop: 4 },
+  legal: { color: '#333', fontSize: 11, textAlign: 'center', marginTop: 24, lineHeight: 16 },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
 });

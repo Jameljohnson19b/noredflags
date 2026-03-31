@@ -1,0 +1,36 @@
+diff --git a/node_modules/react-native/React/CoreModules/RCTDevMenu.mm b/node_modules/react-native/React/CoreModules/RCTDevMenu.mm
+index 2f57d4b..88b3e02 100644
+--- a/node_modules/react-native/React/CoreModules/RCTDevMenu.mm
++++ b/node_modules/react-native/React/CoreModules/RCTDevMenu.mm
+@@ -6,6 +6,7 @@
+  */
+ 
+ #import <React/RCTDevMenu.h>
++#import <TargetConditionals.h>
+ 
+ #import <FBReactNativeSpec/FBReactNativeSpec.h>
+ #import <React/RCTBridge+Private.h>
+diff --git a/node_modules/react-native/React/CoreModules/RCTRedBox.mm b/node_modules/react-native/React/CoreModules/RCTRedBox.mm
+index 15cf2f0..f8a0e6d 100644
+--- a/node_modules/react-native/React/CoreModules/RCTRedBox.mm
++++ b/node_modules/react-native/React/CoreModules/RCTRedBox.mm
+@@ -6,6 +6,7 @@
+  */
+ 
+ #import "RCTRedBox.h"
++#import <TargetConditionals.h>
+ 
+ #import <FBReactNativeSpec/FBReactNativeSpec.h>
+ #import <React/RCTBridge.h>
+diff --git a/node_modules/react-native/React/Modules/RCTRedBoxExtraDataViewController.m b/node_modules/react-native/React/Modules/RCTRedBoxExtraDataViewController.m
+index fb2b2e3..089f740 100644
+--- a/node_modules/react-native/React/Modules/RCTRedBoxExtraDataViewController.m
++++ b/node_modules/react-native/React/Modules/RCTRedBoxExtraDataViewController.m
+@@ -6,6 +6,7 @@
+  */
+ 
+ #import "RCTRedBoxExtraDataViewController.h"
++#import <TargetConditionals.h>
+ 
+ @interface RCTRedBoxExtraDataCell : UITableViewCell
+ 

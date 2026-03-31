@@ -15,7 +15,7 @@ export function SignalBackground({ score, opacityOverlay = 0.1, children, style,
   return (
     <View style={[styles.container, style]} {...rest}>
       {/* Background is stark black */}
-      <View style={StyleSheet.absoluteFill} backgroundColor={Colors.background} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.background }]} />
       
       {/* The transition layer is slightly washed out directly over black */}
       <ColorTransitionLayer score={score} duration={1200} style={{ opacity: opacityOverlay }} />

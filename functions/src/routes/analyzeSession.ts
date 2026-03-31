@@ -1,42 +1,61 @@
-import { Request } from 'firebase-functions/v2/https';
-import { DeepSeekService } from '../services/deepseekService';
-import { db } from '../config/firebaseAdmin';
+import { Request, Response } from "express";
+import { deepseekService } from "../services/deepseekService";
+import { db } from "../lib/firebase";
 
-// Fix: Using any for response to resolve typing mismatch with Express during build
-export const analyzeSessionHandler = async (req: Request, res: any): Promise<void> => {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+/**
+ * REDFLAGS AI Analysis Handler
+ * Unified route for both Text and Vision signals.
+ */
+export const analyzeSessionHandler = async (req: Request, res: Response) => {
+    try {
+        const { statement, image, sessionId, userId } = req.body;
 
-  try {
-    const { statement, sessionId, userId, userContext } = req.body;
+        if (!sessionId || !userId) {
+            return res.status(400).json({ error: "Context missing (sessionId or userId)." });
+        }
 
-    if (!statement || !sessionId || !userId) {
-       res.status(400).json({ error: 'Missing required fields: statement, sessionId, userId.' });
-       return;
+        let content = statement;
+        
+        // VISION INGESTION: If image is provided, describe it first.
+        if (image) {
+            console.log(`[analyzeSession] Reaching Vision endpoint for session ${sessionId}`);
+            const visionResult = await deepseekService.analyzeImage(image);
+            content = visionResult.description;
+        }
+
+        if (!content || content.trim().length === 0) {
+            return res.status(400).json({ error: "No signal captured (empty text or image)." });
+        }
+
+        // COGNITIVE INTERPRETATION: Run through REDFLAGS Core
+        const signal = await deepseekService.analyzeSignal(content);
+
+        // PERSISTENCE: Save trace to user's history
+        const sessionRef = db.collection('users').doc(userId).collection('sessions').doc(sessionId);
+        const signalDoc = await sessionRef.collection('signals').add({
+            content,
+            riskLevel: signal.riskLevel,
+            reasoning: signal.reasoning,
+            confidence: signal.confidence,
+            createdAt: Date.now()
+        });
+
+        console.log(`[analyzeSession] Success: Recorded signal ${signalDoc.id} for user ${userId}`);
+
+        return res.json({ 
+            success: true, 
+            signal: { 
+                ...signal, 
+                content, 
+                createdAt: Date.now() 
+            } 
+        });
+    } catch (err: any) {
+        console.error("ANALYSIS EXCEPTION:", err);
+        return res.status(500).json({ 
+            error: "Backend Engine Failure", 
+            message: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
-
-    const lensRef = db.collection('users').doc(userId).collection('profile').doc('lens');
-    const lensSnap = await lensRef.get();
-    
-    const activeLens = lensSnap.exists ? lensSnap.data() : userContext;
-
-    const analysis = await DeepSeekService.analyzeStatement(statement, activeLens);
-
-    const signalData = {
-      content: statement,
-      riskLevel: analysis.riskLevel,
-      reasoning: analysis.reasoning,
-      confidence: analysis.confidence,
-      createdAt: new Date().getTime(),
-    };
-
-    await db.collection('users').doc(userId).collection('sessions').doc(sessionId).collection('signals').add(signalData);
-
-    res.status(200).json({ success: true, signal: signalData });
-  } catch (error: any) {
-    console.error("Handler Error:", error);
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
-  }
 };

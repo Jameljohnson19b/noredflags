@@ -6,6 +6,7 @@ import { LensService } from '../../lib/onboarding/lensService';
 import { auth } from '../../lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Simple select pseudo-buttons for the Lens
 const SelectOption = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => (
@@ -43,33 +44,23 @@ export default function OnboardingLens() {
     setLoading(true);
     setError(null);
 
-    try {
-      if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
-        console.warn("Dev Mode: Bypassing all Cloud Auth for instant simulator onboarding.");
-        // SKIP ALL AUTH CLOUD CALLS
-      } else {
-        let user = auth.currentUser;
-        if (!user) {
-          console.log("Attempting Cloud Auth for onboarding...");
-          try {
-            const cred = await signInAnonymously(auth);
-            user = cred.user;
-          } catch (authErr: any) {
-            console.error("Cloud Auth Failed:", authErr.message);
-            throw authErr;
-          }
-        }
-      }
+    const user = auth.currentUser;
+    if (!user || user.isAnonymous) {
+      Alert.alert("Account Required", "Please log in on the previous screen to save your Lens.");
+      router.replace('/paywall/pro');
+      return;
+    }
 
-      console.log("Saving Relationship Lens...");
+    try {
+      console.log("Saving Lens directly to cloud...");
       await LensService.saveLens(lens);
       
-      // Move to capturing signals
+      // Once lens is saved, move to the core capture experience
       router.replace('/capture/live-input');
     } catch (e: any) {
-      console.error("Critical submission error:", e);
-      setError(e.message || "Something went wrong.");
-      Alert.alert("Submission Error", e.message || "Something went wrong.");
+      console.error("Lens save error:", e);
+      setError(e.message || "Failed to save Relationship Lens.");
+      Alert.alert("Save Error", e.message);
     } finally {
       setLoading(false);
     }

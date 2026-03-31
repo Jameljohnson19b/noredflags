@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "REDFLAGS",
-    "slug": "redflags",
+    "slug": "noredflags",
+    "sdkVersion": "51.0.0",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/icon.png",
@@ -9,12 +10,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.noredflags.app",
+      "buildNumber": "18",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": [],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "REDFLAGS needs access to your camera to capture and analyze dating signals in real-time.",
+        "NSPhotoLibraryUsageDescription": "REDFLAGS needs access to your photos to import and analyze screenshots from your dating apps.",
+        "NSLocationWhenInUseUsageDescription": "REDFLAGS uses your location to provide context-aware insights based on your dating environment.",
+        "NSMicrophoneUsageDescription": "REDFLAGS needs access to your microphone to analyze vocal cues and emotional tone during dates."
       }
     },
     "scheme": "redflags",
@@ -36,7 +41,15 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-apple-authentication",
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "REDFLAGS needs access to your microphone to analyze vocal cues and emotional tone during dates.",
+          "speechRecognitionPermission": "Allow REDFLAGS to transcribe your observations in real-time."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

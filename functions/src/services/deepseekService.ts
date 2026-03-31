@@ -1,101 +1,78 @@
 import { env } from '../config/env';
 
-export interface DeepSeekResponse {
-  riskLevel: 'Red Flag' | 'Yellow Flag' | 'Green Flag' | 'Personal Mismatch' | 'Personal Match' | 'Needs Clarification';
-  reasoning: string;
-  confidence: number;
+export interface SignalSignal {
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'MAX';
+    reasoning: string;
+    confidence: number;
 }
 
-/**
- * Service to handle communication with DeepSeek API for risk analysis.
- */
 export class DeepSeekService {
-  private static readonly API_URL = 'https://api.deepseek.com/v1/chat/completions';
+    private readonly apiKey: string;
+    private readonly apiUrl: string = 'https://api.deepseek.com/v1';
 
-  static async analyzeStatement(statement: string, rawLensData?: any): Promise<DeepSeekResponse> {
-    const apiKey = env.DEEPSEEK_API_KEY.value();
-
-    if (!apiKey) {
-      throw new Error("DEEPSEEK_API_KEY is not configured in the environment.");
+    constructor() {
+        this.apiKey = env.DEEPSEEK_API_KEY;
     }
 
-    // Build the structural prompt defining the user's specific constraints (The Relationship Lens)
-    let lensContext = '';
-    if (rawLensData) {
-      lensContext = `
-USER RELATIONSHIP LENS (Preferences):
-- Who they are: ${rawLensData.whoAmI || 'Unknown'}
-- THE WANT LIST: ${rawLensData.userWants || 'Unknown'}
-- THE NO LIST: ${rawLensData.userDontWants || 'Unknown'}
-- Who they date: ${rawLensData.whoTheyDate || 'Unknown'}
-- Relationship Goals: ${rawLensData.relationshipGoals || 'Unknown'}
-- Monogamy Preference: ${rawLensData.monogamy || 'Unknown'}
-- Desire for Children: ${rawLensData.desireForChildren || 'Unknown'}
-- Open to Partners with Children: ${rawLensData.openToChildren || 'Unknown'}
-- Financial Stability Importance: ${rawLensData.financialImportance || 'Unknown'}
-- Ambition Importance: ${rawLensData.ambitionImportance || 'Unknown'}
-- Lifestyle Preferences: ${rawLensData.lifestyle || 'Unknown'}
-- Hard Dealbreakers: ${rawLensData.hardDealbreakers || 'None stated'}
-- Soft Concerns: ${rawLensData.softConcerns || 'None stated'}
+    /**
+     * TEXTUAL INTERPRETATION
+     * Analyzes raw observation notes or transcribed voice text for psychological dating signals.
+     */
+    async analyzeSignal(content: string): Promise<SignalSignal> {
+        if (!this.apiKey) throw new Error("DEEPSEEK_API_KEY NOT FOUND In Secret Manager.");
 
-CRITICAL RULE:
-A trait should not be labeled a red flag unless it is:
-1. broadly concerning across contexts, or
-2. directly inconsistent with the user's stated preferences.
-`;
-    }
+        try {
+            const response = await fetch(`${this.apiUrl}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        { 
+                          role: 'system', 
+                          content: `You are REDFLAGS, a dating psychological risk assessment engine. 
+                          Analyze the user's dating observation or signal for caution flags (Green/Yellow/Red/Max). 
+                          Think about emotional intelligence, boundaries, and red flags.
+                          Output MUST be a valid JSON object: 
+                          { "riskLevel": "LOW"|"MEDIUM"|"HIGH"|"MAX", "reasoning": "A concise, hard-hitting analysis.", "confidence": 0.0-1.0 }` 
+                        },
+                        { role: 'user', content }
+                    ],
+                    response_format: { type: 'json_object' }
+                })
+            });
 
-    const payload = {
-      model: "deepseek-chat",
-      messages: [
-        {
-          role: "system",
-          content: `You are the REDFLAGS Analysis Engine. You are NOT a chatbot.
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`DeepSeek AI Error: ${response.status} - ${JSON.stringify(errData)}`);
+            }
 
-CORE OPERATING PROTOCOL:
-1. Interpret statements about a dating partner's behavior, personality, or traits.
-2. PASS/FAIL criteria: If the input is NOT relevant to dating or a person, classify as "Needs Clarification" with reasoning "Out of scope: REDFLAGS only analyzes dating signals."
-3. NO SMALL TALK. NO ADVICE. NO ROLEPLAY. NO EXPLAINING TOPICS.
-4. ONLY return JSON.
-
-ANALYSIS LAYERS:
-- Universal caution signals (e.g., aggression, deception, lack of effort)
-- Personal mismatch (vs. User Relationship Lens)
-- Personal match (vs. User Relationship Lens)
-- Contextual offsets (e.g., humor, high-stress situation)
-
-${lensContext}
-
-Output strictly in JSON format: {"riskLevel": "<Output Type>", "reasoning": "<Concise reasoning mapping to the lens or universal rules>", "confidence": <number between 0 and 1>}.`
-        },
-        {
-          role: "user",
-          content: statement
+            const data = await response.json();
+            return JSON.parse(data.choices[0].message.content);
+        } catch (e: any) {
+            console.error("[DeepSeek] Interpretation Error:", e.message);
+            throw e;
         }
-      ],
-      response_format: { type: "json_object" }
-    };
-
-    try {
-      const response = await fetch(this.API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`DeepSeek API responded with status: ${response.status}`);
-      }
-
-      const data: any = await response.json();
-      const content = data.choices[0].message.content;
-      return JSON.parse(content) as DeepSeekResponse;
-    } catch (error) {
-      console.error("DeepSeek Analysis Error:", error);
-      throw new Error("Failed to analyze statement.");
     }
-  }
+
+    /**
+     * VISION INGESTION
+     * Processes base64 encoded screenshots (bios/DMs).
+     */
+    async analyzeImage(base64: string): Promise<{ description: string }> {
+        // Deepseek V3/Chat endpoint is text-only for now in most configurations.
+        // We simulate interpretation for the MVP until a full Vision-capable model is confirmed.
+        // If GPT-4o Vision is available, update endpoint accordingly.
+        
+        console.log(`[Vision] Processing image payload... Length: ${base64.length}`);
+        
+        return { 
+          description: "[IMAGE OCR SIMULATION] Dating application screenshot detected. Content: 'We should meet up tomorrow? Only if you promise not to be a serial killer haha.' Interpretation: Playful banter but checking safety boundaries." 
+        };
+    }
 }
+
+export const deepseekService = new DeepSeekService();

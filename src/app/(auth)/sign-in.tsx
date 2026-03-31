@@ -1,30 +1,100 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { auth } from '../../lib/firebase';
+import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    console.log("Logged in with:", email);
-    router.replace('/onboarding');
+  // Google Auth Setup
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    responseType: 'id_token',
+  });
+
+  React.useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      setLoading(true);
+      signInWithCredential(auth, credential)
+        .then(() => {
+          router.replace('/capture/live-input');
+        })
+        .catch((e) => {
+          Alert.alert("Google Login Error", e.message);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [response]);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Missing Info", "Please enter both email and password.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log("Logged in with:", email);
+      router.replace('/capture/live-input');
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error.message || "Log in failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAppleLogin = () => {
-    console.log("Logged in with Apple");
-    router.replace('/onboarding');
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      const appleResult = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const { identityToken } = appleResult;
+      if (identityToken) {
+        const provider = new OAuthProvider('apple.com');
+        const credential = provider.credential({
+          idToken: identityToken,
+        });
+        await signInWithCredential(auth, credential);
+        router.replace('/capture/live-input');
+      }
+    } catch (e: any) {
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert("Apple Login Error", e.message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
-    console.log("Logged in with Google");
-    router.replace('/onboarding');
+    if (request) {
+      promptAsync();
+    } else {
+      Alert.alert("Error", "Google Auth Request not ready yet. Please try again.");
+    }
   };
 
   const handleGuestLogin = () => {
-    console.log("Continuing as Anonymous Guest");
-    router.replace('/onboarding');
+    router.replace('/capture/live-input');
   };
 
   return (
@@ -64,8 +134,16 @@ export default function SignIn() {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Log In & Analyze</Text>
+      <TouchableOpacity 
+        style={[styles.button, (!email || !password || loading) && { opacity: 0.5 }]} 
+        onPress={handleLogin}
+        disabled={loading || !email || !password}
+      >
+        {loading ? (
+          <ActivityIndicator color={Colors.background} />
+        ) : (
+          <Text style={styles.buttonText}>Log In & Analyze</Text>
+        )}
       </TouchableOpacity>
       
       <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>

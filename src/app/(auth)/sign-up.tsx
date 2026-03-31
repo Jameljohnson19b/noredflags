@@ -1,30 +1,100 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { auth } from '../../lib/firebase';
+import { createUserWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignUp = () => {
-    console.log("Registered with email: ", email);
-    router.replace('/onboarding');
+  // Google Auth Setup
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
+    responseType: 'id_token',
+  });
+
+  React.useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      setLoading(true);
+      signInWithCredential(auth, credential)
+        .then(() => {
+          router.replace('/capture/live-input');
+        })
+        .catch((e) => {
+          Alert.alert("Google Sign-Up Error", e.message);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [response]);
+
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      Alert.alert("Missing Info", "Please enter both email and password.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      console.log("Registered with email: ", email);
+      router.replace('/capture/live-input');
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Registration Error", e.message || "Failed to create account.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAppleSignUp = () => {
-    console.log("Registered with Apple");
-    router.replace('/onboarding');
+  const handleAppleSignUp = async () => {
+    setLoading(true);
+    try {
+      const appleResult = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const { identityToken } = appleResult;
+      if (identityToken) {
+        const provider = new OAuthProvider('apple.com');
+        const credential = provider.credential({
+          idToken: identityToken,
+        });
+        await signInWithCredential(auth, credential);
+        router.replace('/capture/live-input');
+      }
+    } catch (e: any) {
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert("Apple Sign-Up Error", e.message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignUp = () => {
-    console.log("Registered with Google");
-    router.replace('/onboarding');
+    if (request) {
+      promptAsync();
+    } else {
+      Alert.alert("Error", "Google Registration Request not ready yet. Please try again.");
+    }
   };
 
   const handleGuestSignUp = () => {
-    console.log("Continuing as Anonymous Guest");
-    router.replace('/onboarding');
+    router.replace('/capture/live-input');
   };
 
   return (
@@ -32,11 +102,11 @@ export default function SignUp() {
       <Text style={styles.title}>Welcome! 💖</Text>
       <Text style={styles.subtitle}>Create an account to build your permanent Relationship Lens and unlock AI emotional intelligence.</Text>
 
-      <TouchableOpacity style={styles.oauthButton} onPress={handleAppleSignUp}>
+      <TouchableOpacity style={styles.oauthButton} onPress={handleAppleSignUp} disabled={loading}>
         <Text style={styles.oauthButtonText}> Sign up with Apple</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.oauthButton, styles.googleButton]} onPress={handleGoogleSignUp}>
+      <TouchableOpacity style={[styles.oauthButton, styles.googleButton]} onPress={handleGoogleSignUp} disabled={loading}>
         <Text style={[styles.oauthButtonText, styles.googleButtonText]}>G Sign up with Google</Text>
       </TouchableOpacity>
 
@@ -64,8 +134,12 @@ export default function SignUp() {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Build My Lens</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignUp} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color={Colors.background} />
+        ) : (
+          <Text style={styles.buttonText}>Build My Lens</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.guestLink} onPress={handleGuestSignUp}>

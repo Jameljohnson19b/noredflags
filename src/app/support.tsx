@@ -1,197 +1,359 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Linking, 
+  Dimensions, 
+  TextInput, 
+  KeyboardAvoidingView, 
+  Platform 
+} from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
+import { SignalBackground } from '../components/signals/SignalBackground';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
 
 export default function SupportPage() {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
   const handleEmailSupport = () => {
     Linking.openURL('mailto:support@noredflags.xyz?subject=Support Request');
   };
 
+  const handleSubmit = () => {
+    if (!email || !message) return;
+    setSubmitted(true);
+    // Future: API call to submit form
+    setTimeout(() => {
+      setSubmitted(false);
+      setEmail('');
+      setMessage('');
+    }, 3000);
+  };
+
+  const FAQS = [
+    {
+      q: "How does the Free Trial work?",
+      a: "REDFLAGS offers a 3-day full spectrum trial. Configure your Relationship Lens, scan signals, and get deep analysis. No credit card required for guest mode. After 3 days, choose your level of insight."
+    },
+    {
+      q: "What is the Relationship Lens?",
+      a: "It's your personal AI filter. We don't give generic advice. We cross-reference what YOU value with what they actually said. A 'Red Flag' for one person might be a 'Yellow' for another based on their specific Lens."
+    },
+    {
+      q: "How secure is my data?",
+      a: "Maximum privacy is our core. Encryption at rest and in transit. We are a tool for YOUR clarity, not a data broker. Your logs and Lens profiles are yours alone."
+    },
+    {
+      q: "Can I upgrade from Core to Pro?",
+      a: "Yes. Upgrading to Pro gives you deeper psychological reads, behavioral pattern matching, and unlimited scans. Transition instantly via the 'Profile' or 'Paywall' tabs."
+    }
+  ];
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      
-      {/* Navbar Section */}
-      <View style={styles.nav}>
-        <TouchableOpacity onPress={() => router.push('/')}>
-          <Text style={styles.navLogo}>REDFLAGS</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
-          <Text style={styles.navLogin}>Log In</Text>
-        </TouchableOpacity>
-      </View>
+    <SignalBackground score={85} style={styles.container}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          
+          {/* Header Navigation */}
+          <View style={styles.nav}>
+            <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+              <Text style={styles.navLogo}>NOREDFLAGS</Text>
+            </TouchableOpacity>
+            {!isMobile && (
+              <View style={styles.navLinks}>
+                <TouchableOpacity onPress={() => router.push('/')}><Text style={styles.navLinkText}>Mission</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}><Text style={styles.navLinkText}>Log In</Text></TouchableOpacity>
+              </View>
+            )}
+          </View>
 
-      <View style={styles.pageHeader}>
-        <Text style={styles.pageTitle}>Support & FAQ</Text>
-        <Text style={styles.pageDescription}>
-          How can we help you decode your dating life? Find answers to common questions below, or reach out to our team directly.
-        </Text>
-      </View>
+          {/* Hero Branding */}
+          <View style={styles.heroSection}>
+            <Text style={styles.heroPreTitle}>MISSION SUPPORT</Text>
+            <Text style={styles.heroTitle}>HELP</Text>
+            <Text style={styles.heroTitleOutlined}>CENTRE.</Text>
+            <View style={styles.separator} />
+          </View>
 
-      <View style={styles.faqSection}>
-        <View style={styles.faqCard}>
-          <Text style={styles.faqQuestion}>How does the Free Trial work?</Text>
-          <Text style={styles.faqAnswer}>
-            REDFLAGS offers a 3-day free trial for all new users to configure their Relationship Lens and scan signals. After 3 days, you can choose to upgrade to Core ($2.99/week) or Pro ($9.99/month). You will not be automatically billed if you signed in as an Anonymous Guest without a linked App Store or Google Play account.
-          </Text>
-        </View>
+          <View style={styles.mainGrid}>
+            
+            {/* FAQ Column */}
+            <View style={styles.faqColumn}>
+              <Text style={styles.columnHeader}>FREQUENT QUESTIONS</Text>
+              {FAQS.map((faq, idx) => (
+                <View key={idx} style={styles.faqCard}>
+                  <Text style={styles.faqQuestion}>{faq.q}</Text>
+                  <Text style={styles.faqAnswer}>{faq.a}</Text>
+                </View>
+              ))}
+            </View>
 
-        <View style={styles.faqCard}>
-          <Text style={styles.faqQuestion}>What is the Relationship Lens?</Text>
-          <Text style={styles.faqAnswer}>
-            Your Relationship Lens is the core AI filter REDFLAGS uses to evaluate statements. Instead of generic advice, our AI cross-references what you consider a "dealbreaker" with what your partner actually said to provide a hyper-personalized Green Light or Red Flag rating.
-          </Text>
-        </View>
+            {/* Contact Column */}
+            <View style={styles.contactColumn}>
+              <View style={styles.contactCard}>
+                <Text style={styles.columnHeader}>DIRECT INQUIRY</Text>
+                <Text style={styles.contactDescription}>
+                  Need a human perspective on a technical issue? Send us a message below.
+                </Text>
 
-        <View style={styles.faqCard}>
-          <Text style={styles.faqQuestion}>How do I cancel my subscription?</Text>
-          <Text style={styles.faqAnswer}>
-            If you subscribed via the App Store, open your iPhone Settings &gt; Apple ID &gt; Subscriptions. Select REDFLAGS and tap "Cancel Subscription". If you subscribed via Google Play, open the Play Store app, go to Payments &amp; subscriptions, and cancel REDFLAGS.
-          </Text>
-        </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>REPLY ADDRESS</Text>
+                  <TextInput 
+                    style={styles.input}
+                    placeholder="you@email.com"
+                    placeholderTextColor="#555"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
 
-        <View style={styles.faqCard}>
-          <Text style={styles.faqQuestion}>Are my texts and logs private?</Text>
-          <Text style={styles.faqAnswer}>
-            Yes. REDFLAGS is built as an emotionally sensitive second brain for dating. We do not sell your personal Relationship Lens responses or scanned texts to third parties or advertising networks.
-          </Text>
-        </View>
-      </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>YOUR MESSAGE</Text>
+                  <TextInput 
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Describe your issue..."
+                    placeholderTextColor="#555"
+                    multiline
+                    numberOfLines={4}
+                    value={message}
+                    onChangeText={setMessage}
+                  />
+                </View>
 
-      <View style={styles.contactSection}>
-        <Text style={styles.contactHeader}>Still need help?</Text>
-        <TouchableOpacity style={styles.contactButton} onPress={handleEmailSupport}>
-          <Text style={styles.contactButtonText}>Email support@noredflags.xyz</Text>
-        </TouchableOpacity>
-      </View>
+                <TouchableOpacity 
+                  style={[styles.submitButton, submitted && styles.submitButtonSuccess]} 
+                  onPress={handleSubmit}
+                  disabled={submitted}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {submitted ? "SENT" : "SEND MESSAGE"}
+                  </Text>
+                </TouchableOpacity>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerCopyright}>© {new Date().getFullYear()} JEDI LLC. All rights reserved.</Text>
-      </View>
+                <TouchableOpacity style={styles.directEmail} onPress={handleEmailSupport}>
+                  <Text style={styles.directEmailText}>Or email support@noredflags.xyz</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-    </ScrollView>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerLogo}>NOREDFLAGS</Text>
+            <View style={styles.footerDivider} />
+            <Text style={styles.footerCopyright}>
+              © {new Date().getFullYear()} JEDI LLC. SYSTEM VERSION 1.0.0
+            </Text>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SignalBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
   },
   content: {
-    padding: 24,
+    padding: isMobile ? 20 : 60,
     alignItems: 'center',
-    paddingBottom: 60,
+    paddingBottom: 100,
   },
   nav: {
     width: '100%',
-    maxWidth: 1200,
+    maxWidth: 1100,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 24,
-    marginBottom: 40,
+    marginBottom: 80,
   },
   navLogo: {
-    color: '#ffffff',
+    color: Colors.text,
     fontSize: 24,
     fontWeight: '900',
     letterSpacing: -1,
   },
-  navLogin: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  navLinks: {
+    flexDirection: 'row',
+    gap: 32,
   },
-  pageHeader: {
-    maxWidth: 800,
+  navLinkText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+    opacity: 0.7,
+  },
+  heroSection: {
     width: '100%',
-    marginBottom: 48,
-    alignItems: isMobile ? 'flex-start' : 'center',
-  },
-  pageTitle: {
-    color: '#ffffff',
-    fontSize: isMobile ? 48 : 72,
-    fontWeight: '900',
-    letterSpacing: -2,
-    marginBottom: 16,
-    textAlign: isMobile ? 'left' : 'center',
-  },
-  pageDescription: {
-    color: '#888888',
-    fontSize: 18,
-    lineHeight: 28,
-    textAlign: isMobile ? 'left' : 'center',
-    maxWidth: 600,
-  },
-  faqSection: {
-    width: '100%',
-    maxWidth: 800,
-    gap: 24,
+    maxWidth: 1100,
     marginBottom: 60,
   },
+  heroPreTitle: {
+    color: Colors.caution,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 3,
+    marginBottom: 8,
+  },
+  heroTitle: {
+    color: Colors.text,
+    fontSize: isMobile ? 64 : 120,
+    fontWeight: '900',
+    letterSpacing: -4,
+    lineHeight: isMobile ? 60 : 110,
+  },
+  heroTitleOutlined: {
+    color: 'transparent',
+    fontSize: isMobile ? 64 : 120,
+    fontWeight: '900',
+    letterSpacing: -4,
+    lineHeight: isMobile ? 60 : 110,
+    textShadowColor: Colors.text,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 1,
+  },
+  separator: {
+    width: 60,
+    height: 4,
+    backgroundColor: Colors.safe,
+    marginTop: 32,
+  },
+  mainGrid: {
+    width: '100%',
+    maxWidth: 1100,
+    flexDirection: isMobile ? 'column' : 'row',
+    gap: 60,
+  },
+  faqColumn: {
+    flex: 1.2,
+    gap: 20,
+  },
+  contactColumn: {
+    flex: 1,
+  },
+  columnHeader: {
+    color: '#555',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 24,
+  },
   faqCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
     padding: 24,
-    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   faqQuestion: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: Colors.text,
+    fontSize: 18,
+    fontWeight: '800',
     marginBottom: 12,
   },
   faqAnswer: {
-    color: '#aaaaaa',
-    fontSize: 16,
+    color: Colors.textMuted,
+    fontSize: 15,
     lineHeight: 24,
   },
-  contactSection: {
-    width: '100%',
-    maxWidth: 800,
-    alignItems: 'center',
-    paddingVertical: 40,
-    borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  contactCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 24,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  contactHeader: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '800',
+  contactDescription: {
+    color: Colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  inputGroup: {
     marginBottom: 24,
   },
-  contactButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 999,
+  inputLabel: {
+    color: '#555',
+    fontSize: 10,
+    fontWeight: '900',
+    marginBottom: 8,
+    letterSpacing: 1,
   },
-  contactButtonText: {
-    color: '#000000',
+  input: {
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
   },
-  footer: {
-    marginTop: 60,
-    paddingTop: 40,
-    borderTopWidth: 1,
-    borderColor: '#222',
-    width: '100%',
+  textArea: {
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 18,
+    borderRadius: 999,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitButtonSuccess: {
+    backgroundColor: Colors.safe,
+  },
+  submitButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  directEmail: {
+    marginTop: 24,
     alignItems: 'center',
   },
+  directEmailText: {
+    color: Colors.textMuted,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  footer: {
+    marginTop: 100,
+    width: '100%',
+    maxWidth: 1100,
+    alignItems: 'center',
+  },
+  footerLogo: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  footerDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: '#222',
+    marginVertical: 20,
+  },
   footerCopyright: {
-    color: '#555555',
-    fontSize: 12,
+    color: '#555',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
   }
 });

@@ -1,13 +1,21 @@
-import { onRequest } from 'firebase-functions/v2/https';
-import { analyzeSessionHandler } from './routes/analyzeSession';
-import { env } from './config/env';
+import { onRequest } from "firebase-functions/v2/https";
+import express from "express";
+import cors from "cors";
+import { analyzeSessionHandler } from "./routes/analyzeSession";
 
-export const analyzeSession = onRequest(
-  {
-    secrets: [env.DEEPSEEK_API_KEY],
-    cors: true,
-  },
-  analyzeSessionHandler
-);
+const app = express();
+app.use(cors({ origin: true }));
+app.use(express.json());
 
-// We will add createCheckoutSession and more webhook logic here later as per the BUILD ORDER
+// Main analysis route
+app.post("/", analyzeSessionHandler);
+
+// Define the Cloud Function with Secret Manager access
+export const analyzeSession = onRequest({
+  secrets: ["DEEPSEEK_API_KEY", "RESEND_API_KEY"],
+  maxInstances: 10,
+  timeoutSeconds: 300,
+  region: "us-central1"
+}, (req, res) => {
+  return app(req, res);
+});

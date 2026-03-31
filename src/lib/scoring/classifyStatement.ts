@@ -14,7 +14,7 @@ export interface ClassifiedStatement {
 export async function classifyStatement(statement: string): Promise<ClassifiedStatement> {
   return {
     content: statement,
-    riskLevel: 'caution',
+    riskLevel: 'Yellow Flag',
     confidence: 0.8,
     reasoning: 'Stub classification for testing UI prior to full DeepSeek integration',
   };

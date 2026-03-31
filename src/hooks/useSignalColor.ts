@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Animated } from 'react-native';
-import { getScoreColor } from '../lib/scoring/colorMap';
+import { getColorFromScore } from '../lib/scoring/colorMap';
 import { Colors } from '../constants/colors';
 
 /**
@@ -8,7 +8,7 @@ import { Colors } from '../constants/colors';
  * Color = Meaning.
  */
 export function useSignalColor(score: number, duration: number = 750) {
-  const targetColor = getScoreColor(score);
+  const targetColor = getColorFromScore(score);
   
   // Keep track of the previous color to animate from it
   const prevColorRef = useRef<string>(Colors.safe);

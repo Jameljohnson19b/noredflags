@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/colors';
-import { getScoreColor } from '../../lib/scoring/colorMap';
+import { getColorFromScore } from '../../lib/scoring/colorMap';
 
 interface Props {
   heading: string;
@@ -11,7 +11,7 @@ interface Props {
 
 export function ReportSection({ heading, body, highlightScore }: Props) {
   // Leverage meaningful color from the scoring engine if a risk score is tied to this section
-  const accentColor = highlightScore !== undefined ? getScoreColor(highlightScore) : Colors.text;
+  const accentColor = highlightScore !== undefined ? getColorFromScore(highlightScore) : Colors.text;
 
   return (
     <View style={styles.container}>

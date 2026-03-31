@@ -21,3 +21,14 @@ export function getScoreColor(classification: RiskLevel | string): string {
       return Colors.textMuted;
   }
 }
+
+/**
+ * Returns the color associated with a numeric risk score (0-100).
+ * Scoring logic maps ranges to visual indicators.
+ */
+export function getColorFromScore(score: number): string {
+  if (score >= 80) return Colors.maxRisk;     // 🔴 MAX
+  if (score >= 50) return Colors.warning;     // 🟠 WARNING
+  if (score >= 30) return Colors.caution;     // 🟡 CAUTION
+  return Colors.safe;                         // 🟢 SAFE
+}
