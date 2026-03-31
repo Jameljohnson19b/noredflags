@@ -38,10 +38,17 @@ export class LensService {
 
     const lensRef = doc(db, 'users', userUid, 'profile', 'lens');
     
-    await setDoc(lensRef, {
-      ...lens,
-      updatedAt: Date.now()
-    }, { merge: true });
+    console.log(`[LensService] Writing to Firestore for user: ${userUid}`);
+    try {
+      await setDoc(lensRef, {
+        ...lens,
+        updatedAt: Date.now()
+      }, { merge: true });
+      console.log(`[LensService] Firestore Write Success.`);
+    } catch (err) {
+      console.error(`[LensService] Firestore Write Failure:`, err);
+      throw err;
+    }
 
     return { success: true };
   }

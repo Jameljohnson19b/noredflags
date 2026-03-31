@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ActivityIndicator, 
-  Alert, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
   ScrollView,
   Image,
   Vibration
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Colors } from '../../constants/colors';
 import { AnalysisService } from '../../lib/capture/analysisService';
 import { SubjectService, SubjectProfile } from '../../lib/subjects/subjectService';
 import { UserService } from '../../lib/user/userService';
+import { db, auth } from '../../lib/firebase';
 import { router, useLocalSearchParams } from 'expo-router';
-import { auth } from '../../lib/firebase';
 
 export default function LiveInputScreen() {
   const { sessionId: initialSessionId } = useLocalSearchParams<{ sessionId?: string }>();
@@ -26,47 +27,67 @@ export default function LiveInputScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [subjects, setSubjects] = useState<SubjectProfile[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
   const [userTier, setUserTier] = useState<'none' | 'core' | 'pro'>('none');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
+  // Gating Logic
+  const checkAuth = useCallback((tier: 'none' | 'core' | 'pro' = 'none') => {
+    if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') return;
+    const user = auth.currentUser;
+    if (!user || user.isAnonymous || tier === 'none') {
+      console.log("Access denied. Redirecting to paywall. Tier:", tier);
+      router.replace('/paywall/pro');
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
+      const timeoutId = setTimeout(() => {
+        setFetching(false);
+        Alert.alert("Engine Check", "The database is taking longer than usual to respond. Your connection might be slow.");
+      }, 15000);
+
       try {
         const profile = await UserService.getProfile();
-        const tier = profile?.tier || 'none';
+        const tier = (profile?.tier as 'none' | 'core' | 'pro') || 'none';
         setUserTier(tier);
-        
-        // Final tier check for gated content
         checkAuth(tier);
-
-        const list = await SubjectService.getSubjects();
-        setSubjects(list);
-        if (list.length > 0) {
-          setSelectedSubjectId(list[0].id);
-        }
+        clearTimeout(timeoutId);
       } catch (e) {
         console.error("Init Error:", e);
+        clearTimeout(timeoutId);
       } finally {
         setFetching(false);
       }
     };
 
-    const checkAuth = (tier: 'none' | 'core' | 'pro' = 'none') => {
-      // In prod, ensure user is authenticated and HAS A TIER (not anonymous/none)
-      if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') return;
+    const user = auth.currentUser;
+    let unsubscribeSubjects: () => void = () => { };
 
-      const user = auth.currentUser;
-      if (!user || user.isAnonymous || tier === 'none') {
-        console.log("Access denied. Redirecting to paywall. Tier:", tier);
-        router.replace('/paywall/pro');
-      }
-    };
-    
+    if (user && !user.isAnonymous) {
+      const subjectsRef = collection(db, 'users', user.uid, 'subjects');
+      const qSubjects = query(subjectsRef, orderBy('createdAt', 'desc'));
+
+      unsubscribeSubjects = onSnapshot(qSubjects, (snap) => {
+        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubjectProfile));
+        setSubjects(list);
+        if (list.length > 0 && !selectedSubjectId) {
+          setSelectedSubjectId(list[0].id);
+        }
+      }, (err) => {
+        console.error("Subjects Listener Error:", err);
+      });
+    }
+
+    init();
+
     const onSpeechResults = (e: SpeechResultsEvent) => {
       if (e.value) {
         setInput(e.value[0]);
@@ -81,22 +102,20 @@ export default function LiveInputScreen() {
     Voice.onSpeechResults = onSpeechResults;
     Voice.onSpeechError = onSpeechError;
 
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        // We rely on init() to handle the tier check if authenticated
-        init();
-      } else {
+    const unsubscribeAuth = auth.onAuthStateChanged((user: any) => {
+      if (!user || user.isAnonymous) {
         checkAuth('none');
+      } else {
+        init();
       }
     });
 
-    init();
-
     return () => {
-      unsubscribe();
+      unsubscribeAuth();
+      unsubscribeSubjects();
       Voice.destroy().then(Voice.removeAllListeners);
     };
-  }, []);
+  }, [checkAuth, selectedSubjectId]);
 
   const handleStartDictation = async () => {
     if (isListening) {
@@ -144,47 +163,49 @@ export default function LiveInputScreen() {
     setImageBase64(pickerResult.assets[0].base64);
   };
 
-  const handleAddPerson = () => {
-    const limit = userTier === 'pro' ? 10 : 3;
-    if (subjects.length >= limit) {
-      Alert.alert("Limit Reached", `You have reached your ${limit} person limit. Upgrade to Pro for more.`, [
+  const handleAddPerson = async () => {
+    if (!newSubjectName.trim()) {
+      setIsAddingSubject(false);
+      return;
+    }
+
+    const limitCount = userTier === 'pro' ? 10 : 3;
+    if (subjects.length >= limitCount) {
+      Alert.alert("Limit Reached", `You have reached your ${limitCount} person limit.`, [
         { text: "View Pro", onPress: () => router.push('/paywall/pro') },
         { text: "Cancel", style: "cancel" }
       ]);
       return;
     }
 
-    Alert.prompt("New Person", "Enter the name of the person you are dating:", async (name) => {
-      if (!name || !name.trim()) return;
-      
-      setLoading(true);
-      try {
-        const res = await SubjectService.createSubject(name.trim(), userTier);
-        if (res.success && res.id) {
-          const newList = await SubjectService.getSubjects();
-          setSubjects(newList);
-          setSelectedSubjectId(res.id);
-        } else {
-          Alert.alert("Engine Error", res.error || "Failed to add person.");
-        }
-      } catch (e: any) {
-        console.error("Subject Creation Error:", e);
-        Alert.alert("Network Error", "Could not reach the database. Check your connection.");
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      const res = await SubjectService.createSubject(newSubjectName.trim(), userTier);
+      if (res.success && res.id) {
+        setSelectedSubjectId(res.id);
+        setNewSubjectName('');
+        setIsAddingSubject(false);
+      } else {
+        Alert.alert("Save Error", res.error || "Failed to add person.");
       }
-    });
+    } catch (e: any) {
+      console.error("Subject Creation Error:", e);
+      Alert.alert("Network Failure", "Check your connection and try again.");
+    } finally {
+      // Small delay for listener sync
+      setTimeout(() => setLoading(false), 800);
+    }
   };
 
   const handleCapture = async () => {
     if (!selectedSubjectId || loading) return;
     if (!input.trim() && !imageBase64) return;
-    
+
     setLoading(true);
     setError(null);
 
     try {
-      const res = imageBase64 
+      const res = imageBase64
         ? await AnalysisService.analyzeImage(imageBase64, selectedSubjectId)
         : await AnalysisService.analyzeSignal(input, selectedSubjectId);
 
@@ -193,7 +214,7 @@ export default function LiveInputScreen() {
         setSelectedImage(null);
         router.push({
           pathname: '/reports/psychology-read',
-          params: { 
+          params: {
             riskLevel: res.signal.riskLevel,
             reasoning: res.signal.reasoning,
             confidence: res.signal.confidence.toString(),
@@ -221,24 +242,49 @@ export default function LiveInputScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>CAPTURE SIGNAL</Text>
-      
+      <Text style={styles.header}>CAPTURE FLAGS</Text>
+
       <View style={styles.subjectRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subjectList}>
           {subjects.map(s => (
-            <TouchableOpacity 
-              key={s.id} 
-              onPress={() => setSelectedSubjectId(s.id)}
+            <TouchableOpacity
+              key={s.id}
+              onPress={() => {
+                if (selectedSubjectId === s.id) {
+                  router.push({ pathname: '/reports/subject-analysis', params: { id: s.id } });
+                } else {
+                  setSelectedSubjectId(s.id);
+                }
+              }}
               style={[styles.subjectTab, selectedSubjectId === s.id && styles.subjectTabActive]}
             >
               <Text style={[styles.subjectTabText, selectedSubjectId === s.id && styles.subjectTabTextActive]}>
-                {s.name}
+                {s.name} {selectedSubjectId === s.id ? '📊' : ''}
               </Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={styles.addTab} onPress={handleAddPerson}>
-            <Text style={styles.addTabText}>+ ADD</Text>
-          </TouchableOpacity>
+
+          {isAddingSubject ? (
+            <View style={styles.inlineAddContainer}>
+              <TextInput
+                style={styles.inlineInput}
+                placeholder="Name..."
+                placeholderTextColor="#666"
+                value={newSubjectName}
+                onChangeText={setNewSubjectName}
+                autoFocus
+                onSubmitEditing={handleAddPerson}
+                onBlur={() => !newSubjectName && setIsAddingSubject(false)}
+              />
+              <TouchableOpacity onPress={handleAddPerson} style={styles.inlineCheck}>
+                <Text style={styles.inlineCheckText}>✓</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.addTab} onPress={() => setIsAddingSubject(true)}>
+              <Text style={styles.addTabText}>+ ADD PERSON</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </View>
 
@@ -251,7 +297,7 @@ export default function LiveInputScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TextInput 
+          <TextInput
             style={styles.textInput}
             placeholder={isListening ? "Listening..." : "Type manually or upload screenshot..."}
             placeholderTextColor={isListening ? Colors.maxRisk : Colors.textMuted}
@@ -263,16 +309,16 @@ export default function LiveInputScreen() {
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity 
-          style={[styles.uploadButton, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.uploadButton, loading && styles.buttonDisabled]}
           onPress={handleUploadScreenshot}
           disabled={loading}
         >
           <Text style={styles.uploadButtonText}>📸 UPLOAD</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.uploadButton, isListening && styles.dictationButtonActive]} 
+        <TouchableOpacity
+          style={[styles.uploadButton, isListening && styles.dictationButtonActive]}
           onPress={handleStartDictation}
           disabled={loading}
         >
@@ -284,11 +330,11 @@ export default function LiveInputScreen() {
 
       {error && <Text style={styles.errorText}>{error}</Text>}
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
-          styles.button, 
+          styles.button,
           (!input.trim() && !selectedImage || !selectedSubjectId || loading) && styles.buttonDisabled
-        ]} 
+        ]}
         onPress={handleCapture}
         disabled={(!input.trim() && !selectedImage) || !selectedSubjectId || loading}
       >
@@ -319,7 +365,7 @@ const styles = StyleSheet.create({
   },
   subjectRow: {
     marginBottom: 20,
-    height: 44,
+    height: 48,
   },
   subjectList: {
     gap: 12,
@@ -356,6 +402,35 @@ const styles = StyleSheet.create({
   addTabText: {
     color: '#888',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  inlineAddContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.text,
+    paddingRight: 8,
+  },
+  inlineInput: {
+    color: Colors.text,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 14,
+    minWidth: 100,
+  },
+  inlineCheck: {
+    backgroundColor: Colors.text,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineCheckText: {
+    color: Colors.background,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   inputContainer: {

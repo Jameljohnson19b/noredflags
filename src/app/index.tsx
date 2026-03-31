@@ -152,9 +152,9 @@ export default function LandingPage() {
         </View>
 
         <View style={styles.footerLinksRow}>
-          <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
-          <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/support')}><Text style={styles.footerLink}>Support</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/terms' as any)}><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/privacy' as any)}><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/support' as any)}><Text style={styles.footerLink}>Support</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => Linking.openURL('https://x.com/noredflags_app')}><Text style={styles.footerLink}>Twitter</Text></TouchableOpacity>
         </View>
 

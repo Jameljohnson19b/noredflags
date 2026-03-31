@@ -14,7 +14,14 @@ export interface SignalResponse {
 }
 
 export class AnalysisService {
-  private static readonly CLOUD_FUNCTION_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/noredflags-db069/us-central1') + '/analyzeSession';
+  private static readonly CLOUD_FUNCTION_URL = (() => {
+    const base = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/noredflags-db069/us-central1';
+    // If the URL already ends in analyzesession (v2 Cloud Run URL structure), don't append it again
+    if (base.toLowerCase().includes('analyzesession')) {
+      return base;
+    }
+    return base + '/analyzeSession';
+  })();
 
   /**
    * Dispatches the captured statement to the backend for Personalized AI Analysis.

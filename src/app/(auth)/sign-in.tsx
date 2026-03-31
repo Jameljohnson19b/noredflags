@@ -7,6 +7,7 @@ import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWi
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -20,6 +21,9 @@ export default function SignIn() {
     iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     responseType: 'id_token',
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: 'com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9',
+    }),
   });
 
   React.useEffect(() => {
@@ -29,7 +33,7 @@ export default function SignIn() {
       setLoading(true);
       signInWithCredential(auth, credential)
         .then(() => {
-          router.replace('/capture/live-input');
+          router.replace('/paywall/pro');
         })
         .catch((e) => {
           Alert.alert("Google Login Error", e.message);
@@ -48,7 +52,7 @@ export default function SignIn() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       console.log("Logged in with:", email);
-      router.replace('/capture/live-input');
+      router.replace('/paywall/pro');
     } catch (error: any) {
       console.error(error);
       Alert.alert("Error", error.message || "Log in failed.");
@@ -74,7 +78,7 @@ export default function SignIn() {
           idToken: identityToken,
         });
         await signInWithCredential(auth, credential);
-        router.replace('/capture/live-input');
+        router.replace('/paywall/pro');
       }
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
@@ -94,7 +98,7 @@ export default function SignIn() {
   };
 
   const handleGuestLogin = () => {
-    router.replace('/capture/live-input');
+    router.replace('/paywall/pro');
   };
 
   return (

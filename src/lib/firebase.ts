@@ -1,12 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { Auth, getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -18,8 +12,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase with resilience
-let auth: any;
-let db: any;
+let auth: Auth;
+let db: Firestore;
 
 try {
   const app = initializeApp(firebaseConfig);

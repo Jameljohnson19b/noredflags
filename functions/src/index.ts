@@ -13,6 +13,8 @@ app.post("/", analyzeSessionHandler);
 // Define the Cloud Function with Secret Manager access
 export const analyzeSession = onRequest({
   secrets: ["DEEPSEEK_API_KEY", "RESEND_API_KEY"],
+  invoker: "public",
+  minInstances: 1,
   maxInstances: 10,
   timeoutSeconds: 300,
   region: "us-central1"

@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  ActivityIndicator, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { LensService } from '../../lib/onboarding/lensService';
 import { auth } from '../../lib/firebase';
-import { signInAnonymously } from 'firebase/auth';
-import { ActivityIndicator, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Simple select pseudo-buttons for the Lens
-const SelectOption = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => (
-  <TouchableOpacity style={[styles.selectOption, selected && styles.selectOptionActive]} onPress={onPress}>
-    <Text style={[styles.selectText, selected && styles.selectTextActive]}>{label}</Text>
-  </TouchableOpacity>
-);
+import { User } from 'firebase/auth';
 
 export default function OnboardingLens() {
   const [lens, setLens] = useState({
@@ -34,6 +37,29 @@ export default function OnboardingLens() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Initial check for immediate availability
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      setIsAuthenticated(true);
+    }
+
+    const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
+      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Logged Out'}`);
+      if (user && !user.isAnonymous) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const updateLens = (key: string, val: string) => {
     setLens(prev => ({ ...prev, [key]: val }));
@@ -41,86 +67,137 @@ export default function OnboardingLens() {
   };
 
   const handleFinish = async () => {
+    // 1. Validation check
+    if (!lens.whoAmI.trim()) {
+      Alert.alert("Missing Info", "Please tell us a little bit about who you are.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     const user = auth.currentUser;
-    if (!user || user.isAnonymous) {
-      Alert.alert("Account Required", "Please log in on the previous screen to save your Lens.");
-      router.replace('/paywall/pro');
+    // Use optional chaining for safety
+    if (!user?.uid || user.isAnonymous) {
+      setLoading(false);
+      Alert.alert("Account Required", "Please log in to save your Lens.");
+      router.replace('/(auth)/sign-in');
       return;
     }
 
+    // 2. Robust Timeout Management: Increased to 30s to account for AI latency & cold starts
+    timeoutRef.current = setTimeout(() => {
+      setLoading(false);
+      Alert.alert("Connection Timeout", "Optimizing your Relationship Lens is taking longer than expected. Please wait a moment and try again.");
+    }, 30000);
+
     try {
       console.log("Saving Lens directly to cloud...");
-      await LensService.saveLens(lens);
+      const res = await LensService.saveLens(lens);
       
-      // Once lens is saved, move to the core capture experience
-      router.replace('/capture/live-input');
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      if (res.success) {
+        // Once lens is saved, move to the core capture experience
+        router.replace('/capture/live-input');
+      } else {
+        throw new Error("Cloud save failed.");
+      }
     } catch (e: any) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       console.error("Lens save error:", e);
       setError(e.message || "Failed to save Relationship Lens.");
-      Alert.alert("Save Error", e.message);
+      Alert.alert("Save Error", e.message || "Something went wrong while saving your Lens.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={true}
-      alwaysBounceVertical={true}
-      automaticallyAdjustKeyboardInsets={true}
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <Text style={styles.title}>Your Relationship Lens 🔎</Text>
-      <Text style={styles.subtitle}>We use this deeply personal profile to stop generic advice. Tell us the absolute truth about what you need.</Text>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Your Relationship Lens 🔎</Text>
+        <Text style={styles.subtitle}>We use this deeply personal profile to stop generic advice. Tell us the absolute truth about what you need.</Text>
 
-      <Text style={styles.label}>Who are you?</Text>
-      <TextInput style={styles.input} placeholderTextColor={Colors.textMuted} placeholder="e.g. Introverted designer, 28" value={lens.whoAmI} onChangeText={t => updateLens('whoAmI', t)} />
-
-      <View style={styles.masterSection}>
-        <Text style={styles.masterLabel}>THE WANT LIST</Text>
-        <Text style={styles.masterSub}>What do you actually want in a partner?</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea, styles.masterInput]} 
-          placeholderTextColor={Colors.textMuted} 
-          placeholder="e.g. Emotional intelligence, growth mindset, stability..." 
-          multiline 
-          value={lens.userWants} 
-          onChangeText={t => updateLens('userWants', t)} 
-        />
-      </View>
-
-      <View style={styles.masterSection}>
-        <Text style={styles.masterLabel}>THE NO LIST (DEALBREAKERS)</Text>
-        <Text style={styles.masterSub}>What is absolutely NOT allowed?</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea, styles.masterInput, { borderColor: '#EF4444' }]} 
-          placeholderTextColor={Colors.textMuted} 
-          placeholder="e.g. Inconsistency, bad hygiene, over-attachment" 
-          multiline 
-          value={lens.userDontWants} 
-          onChangeText={t => updateLens('userDontWants', t)} 
-        />
-      </View>
-
-      <Text style={[styles.label, { marginTop: 40 }]}>Who do you usually date?</Text>
-      <TextInput style={styles.input} placeholderTextColor={Colors.textMuted} placeholder="e.g. Creative types, older men" value={lens.whoTheyDate} onChangeText={t => updateLens('whoTheyDate', t)} />
-
-
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      <TouchableOpacity style={styles.button} onPress={handleFinish} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color={Colors.background} />
-        ) : (
-          <Text style={styles.buttonText}>Activate Lens</Text>
+        {auth.currentUser && !auth.currentUser.isAnonymous && (
+           <View style={styles.authBadge}>
+             <Text style={styles.authBadgeText}>Signed in as: {auth.currentUser.email}</Text>
+           </View>
         )}
-      </TouchableOpacity>
-    </ScrollView>
+
+        <Text style={styles.label}>Who are you?</Text>
+        <TextInput 
+          style={styles.input} 
+          placeholderTextColor={Colors.textMuted} 
+          placeholder="e.g. Introverted designer, 28" 
+          value={lens.whoAmI} 
+          onChangeText={t => updateLens('whoAmI', t)} 
+        />
+
+        <View style={styles.masterSection}>
+          <Text style={styles.masterLabel}>THE WANT LIST</Text>
+          <Text style={styles.masterSub}>What do you actually want in a partner?</Text>
+          <TextInput 
+            style={[styles.input, styles.textArea, styles.masterInput]} 
+            placeholderTextColor={Colors.textMuted} 
+            placeholder="e.g. Emotional intelligence, growth mindset, stability..." 
+            multiline 
+            value={lens.userWants} 
+            onChangeText={t => updateLens('userWants', t)} 
+          />
+        </View>
+
+        <View style={styles.masterSection}>
+          <Text style={styles.masterLabel}>THE NO LIST (DEALBREAKERS)</Text>
+          <Text style={styles.masterSub}>What is absolutely NOT allowed?</Text>
+          <TextInput 
+            style={[styles.input, styles.textArea, styles.masterInput, { borderColor: '#EF4444' }]} 
+            placeholderTextColor={Colors.textMuted} 
+            placeholder="e.g. Inconsistency, bad hygiene, over-attachment" 
+            multiline 
+            value={lens.userDontWants} 
+            onChangeText={t => updateLens('userDontWants', t)} 
+          />
+        </View>
+
+        <Text style={[styles.label, { marginTop: 40 }]}>Who do you usually date?</Text>
+        <TextInput 
+          style={styles.input} 
+          placeholderTextColor={Colors.textMuted} 
+          placeholder="e.g. Creative types, older men" 
+          value={lens.whoTheyDate} 
+          onChangeText={t => updateLens('whoTheyDate', t)} 
+        />
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        <TouchableOpacity 
+          style={[styles.button, (!isAuthenticated || loading) && styles.buttonDisabled]} 
+          onPress={handleFinish} 
+          disabled={loading || !isAuthenticated}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.background} />
+          ) : (
+            <Text style={styles.buttonText}>{!isAuthenticated ? "Signing in..." : "Activate Lens"}</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -191,36 +268,15 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  selectOption: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: Colors.card,
-  },
-  selectOptionActive: {
-    backgroundColor: Colors.text,
-    borderColor: Colors.text,
-  },
-  selectText: {
-    color: Colors.text,
-    fontWeight: '600',
-  },
-  selectTextActive: {
-    color: Colors.background,
-  },
   button: {
     backgroundColor: Colors.text,
     padding: 18,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 40,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: Colors.background,
@@ -232,5 +288,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  authBadge: {
+    backgroundColor: '#111',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  authBadgeText: {
+    color: '#EAB308',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   }
 });

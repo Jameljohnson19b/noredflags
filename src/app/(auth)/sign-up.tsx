@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, sign
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -20,6 +21,9 @@ export default function SignUp() {
     iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     responseType: 'id_token',
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: 'com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9',
+    }),
   });
 
   React.useEffect(() => {
@@ -29,7 +33,7 @@ export default function SignUp() {
       setLoading(true);
       signInWithCredential(auth, credential)
         .then(() => {
-          router.replace('/capture/live-input');
+          router.replace('/paywall/pro');
         })
         .catch((e) => {
           Alert.alert("Google Sign-Up Error", e.message);
@@ -48,7 +52,7 @@ export default function SignUp() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       console.log("Registered with email: ", email);
-      router.replace('/capture/live-input');
+      router.replace('/paywall/pro');
     } catch (e: any) {
       console.error(e);
       Alert.alert("Registration Error", e.message || "Failed to create account.");
@@ -74,7 +78,7 @@ export default function SignUp() {
           idToken: identityToken,
         });
         await signInWithCredential(auth, credential);
-        router.replace('/capture/live-input');
+        router.replace('/paywall/pro');
       }
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
@@ -94,7 +98,7 @@ export default function SignUp() {
   };
 
   const handleGuestSignUp = () => {
-    router.replace('/capture/live-input');
+    router.replace('/paywall/pro');
   };
 
   return (

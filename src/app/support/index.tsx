@@ -12,8 +12,8 @@ import {
   Platform 
 } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../constants/colors';
-import { SignalBackground } from '../components/signals/SignalBackground';
+import { Colors } from '../../constants/colors';
+import { SignalBackground } from '../../components/signals/SignalBackground';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;

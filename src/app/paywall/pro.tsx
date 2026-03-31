@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { Colors } from '../../constants/colors';
 import { RevenueCatService } from '../../lib/purchases/revenueCat';
 import { router } from 'expo-router';
-import { auth } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
+import { signOut, signInWithCredential, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LensService } from '../../lib/onboarding/lensService';
-import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -18,18 +19,24 @@ export default function ProPaywallScreen() {
   const [fetching, setFetching] = useState(true);
   const [offering, setOffering] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!auth.currentUser && !auth.currentUser.isAnonymous);
+  const [userEmail, setUserEmail] = useState<string | null>(auth.currentUser?.email || null);
 
   // Google Auth Setup
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     webClientId: '606183804439-4fshjefn9ev5h8iu8935int44e9aevc9.apps.googleusercontent.com',
     responseType: 'id_token',
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: 'com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9',
+    }),
   });
 
   useEffect(() => {
     loadOfferings();
-    const unsubscribe = (auth as any).onAuthStateChanged((user: any) => {
-      setIsAuthenticated(!!user && !user.isAnonymous);
+    const unsubscribe = auth.onAuthStateChanged((user: any) => {
+      const isAuth = !!user && !user.isAnonymous;
+      setIsAuthenticated(isAuth);
+      setUserEmail(user?.email || null);
     });
     return unsubscribe;
   }, []);
@@ -40,35 +47,42 @@ export default function ProPaywallScreen() {
       const credential = GoogleAuthProvider.credential(id_token);
       setLoading(true);
       signInWithCredential(auth, credential)
-        .then(async () => {
+        .then(() => {
           setIsAuthenticated(true);
-          // NEW FLOW: After social login on paywall, move to Lens setup.
-          router.replace('/onboarding');
+          // FLOW FIX: Stay on paywall after login as requested
+          setLoading(false);
         })
         .catch((e) => {
-          Alert.alert("Google Sign-In Error", e.message);
-        })
-        .finally(() => setLoading(false));
+          setLoading(false);
+          Alert.alert("Google Auth Error", e.message);
+        });
     }
   }, [response]);
 
   const loadOfferings = async () => {
     try {
-      const currentOffering = await RevenueCatService.fetchOfferings();
-      setOffering(currentOffering);
+      // In production we'd fetch from RevenueCat
+      setFetching(false);
     } catch (e) {
-      console.error(e);
-    } finally {
       setFetching(false);
     }
   };
 
-  const handleSocialSignIn = async (providerName: 'apple' | 'google') => {
-    if (providerName === 'google') {
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      Alert.alert("Signed Out", "You have been logged out.");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSocialSignIn = async (provider: 'apple' | 'google') => {
+    if (provider === 'google') {
       if (request) {
         promptAsync();
       } else {
-        Alert.alert("Error", "Google Sign-In not ready yet.");
+        Alert.alert("Error", "Google Auth is not ready.");
       }
       return;
     }
@@ -85,13 +99,9 @@ export default function ProPaywallScreen() {
       const { identityToken } = appleResult;
       if (identityToken) {
         const provider = new OAuthProvider('apple.com');
-        const credential = provider.credential({
-          idToken: identityToken,
-        });
+        const credential = provider.credential({ idToken: identityToken });
         await signInWithCredential(auth, credential);
         setIsAuthenticated(true);
-        // NEW FLOW: After social login on paywall, move to Lens setup.
-        router.replace('/onboarding');
       }
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
@@ -114,7 +124,7 @@ export default function ProPaywallScreen() {
       const result = await RevenueCatService.purchasePackage(pkg);
       if (result.success) {
         Alert.alert("Welcome to Pro", "Your dating intelligence is now officially unlocked.");
-        // NEW FLOW: After purchase, move to Lens setup.
+        // After purchase, move to Lens setup.
         router.replace('/onboarding');
       } else if (result.error) {
         Alert.alert("Purchase Failed", result.error);
@@ -137,6 +147,15 @@ export default function ProPaywallScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>CHOOSE YOUR DEPTH</Text>
           <Text style={styles.subtitle}>Unlock your 3-day free trial on any plan.</Text>
+          
+          {isAuthenticated && (
+            <View style={styles.loggedInIndicator}>
+              <Text style={styles.loggedInText}>Signed in as: <Text style={{fontWeight: '900'}}>{userEmail || 'User'}</Text></Text>
+              <TouchableOpacity onPress={handleSignOut}>
+                <Text style={styles.signOutLink}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.pricingSection}>
@@ -200,7 +219,10 @@ export default function ProPaywallScreen() {
           <TouchableOpacity style={styles.footerLink} onPress={() => RevenueCatService.restorePurchases()}>
             <Text style={styles.footerLinkText}>Restore Purchases</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerLink} onPress={() => Linking.openURL('https://noredflags.xyz/privacy')}>
+          <TouchableOpacity style={styles.footerLink} onPress={() => router.push('/terms' as any)}>
+            <Text style={styles.footerLinkText}>Terms of Service</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerLink} onPress={() => router.push('/privacy' as any)}>
             <Text style={styles.footerLinkText}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>
@@ -227,12 +249,15 @@ const styles = StyleSheet.create({
   header: { marginTop: 20, marginBottom: 40, alignItems: 'center' },
   title: { color: '#fff', fontSize: 36, fontWeight: '900', letterSpacing: -1 },
   subtitle: { color: '#888', fontSize: 16, fontWeight: '600', marginTop: 8 },
+  loggedInIndicator: { marginTop: 16, alignItems: 'center', backgroundColor: '#111', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#222' },
+  loggedInText: { color: '#888', fontSize: 13, marginBottom: 4 },
+  signOutLink: { color: '#EF4444', fontSize: 12, fontWeight: 'bold', textDecorationLine: 'underline' },
   pricingSection: { marginTop: 40, gap: 8 },
   tierHeader: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 24, marginBottom: 12 },
   masterButton: { backgroundColor: '#111', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: '#333', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   masterButtonFeatured: { backgroundColor: '#fff', borderColor: '#fff' },
   masterButtonText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: -0.5, flex: 1, textAlign: 'left' },
-  selectBadge: { backgroundColor: '#333', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 12 },
+  selectBadge: { backgroundColor: '#333', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginLeft: 12 },
   selectText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   authSection: { marginTop: 60, alignItems: 'center' },
   authButtons: { width: '100%', gap: 16, marginTop: 40 },

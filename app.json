@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.noredflags.app",
-      "buildNumber": "18",
+      "buildNumber": "22",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -19,7 +19,14 @@
         "NSCameraUsageDescription": "REDFLAGS needs access to your camera to capture and analyze dating signals in real-time.",
         "NSPhotoLibraryUsageDescription": "REDFLAGS needs access to your photos to import and analyze screenshots from your dating apps.",
         "NSLocationWhenInUseUsageDescription": "REDFLAGS uses your location to provide context-aware insights based on your dating environment.",
-        "NSMicrophoneUsageDescription": "REDFLAGS needs access to your microphone to analyze vocal cues and emotional tone during dates."
+        "NSMicrophoneUsageDescription": "REDFLAGS needs access to your microphone to analyze vocal cues and emotional tone during dates.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9"
+            ]
+          }
+        ]
       }
     },
     "scheme": "redflags",

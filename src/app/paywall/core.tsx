@@ -16,7 +16,7 @@ export default function CorePaywallScreen() {
           "Secure Subscription",
           "A permanent account (Apple or Google) is required to subscribe and start your core dating analysis.",
           [
-            { text: "Log In or Sign Up", onPress: () => router.push('/(auth)/sign-in') }
+            { text: "Log In or Sign Up", onPress: () => router.push('/(auth)/sign-in' as any) }
           ],
           { cancelable: false }
         );
@@ -71,9 +71,25 @@ export default function CorePaywallScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.proUpgrade} onPress={() => router.push('/paywall/pro')}>
+        <TouchableOpacity style={styles.proUpgrade} onPress={() => router.push('/paywall/pro' as any)}>
           <Text style={styles.proUpgradeText}>Wait, I want the full Psychology Read →</Text>
         </TouchableOpacity>
+
+        <View style={styles.footerLinks}>
+          <TouchableOpacity style={styles.footerLink} onPress={() => RevenueCatService.restorePurchases()}>
+            <Text style={styles.footerLinkText}>Restore</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerLink} onPress={() => router.push('/terms' as any)}>
+            <Text style={styles.footerLinkText}>Terms</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerLink} onPress={() => router.push('/privacy' as any)}>
+            <Text style={styles.footerLinkText}>Privacy</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.legal}>
+          Subscriptions start with a 3-day free trial. Your account will be charged after the trial ends. Cancel anytime.
+        </Text>
       </ScrollView>
 
       {loading && (
@@ -93,6 +109,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     paddingTop: 40,
+    paddingBottom: 60,
   },
   closeButton: {
     alignSelf: 'flex-start',
@@ -168,12 +185,35 @@ const styles = StyleSheet.create({
   },
   proUpgrade: {
     marginTop: 40,
+    marginBottom: 60,
     alignItems: 'center',
   },
   proUpgradeText: {
     color: '#555',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    marginTop: 20,
+  },
+  footerLink: {
+    padding: 4,
+  },
+  footerLinkText: {
+    color: '#333',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  legal: {
+    color: '#222',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 40,
+    lineHeight: 14,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
