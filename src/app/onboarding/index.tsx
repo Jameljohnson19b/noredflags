@@ -47,9 +47,9 @@ export default function OnboardingLens() {
     }
 
     const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
-      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Anonymous/Logged Out'}`);
-      // FIX: Allow anonymous users to proceed to unlock the app's trial flow
-      if (user) {
+      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Guest/Logged Out'}`);
+      // REVERT: Only allow permanent accounts (Apple/Google/Email) to activate their lens
+      if (user && !user.isAnonymous) {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
@@ -81,8 +81,14 @@ export default function OnboardingLens() {
     // Use optional chaining for safety
     if (!user?.uid || user.isAnonymous) {
       setLoading(false);
-      Alert.alert("Account Required", "Please log in to save your Lens.");
-      router.replace('/(auth)/sign-in');
+      Alert.alert(
+        "Account Required", 
+        "A permanent account (Email/Apple/Google) is required to unlock your dating intelligence 3-day trial.",
+        [
+          { text: "Log In", onPress: () => router.push('/(auth)/sign-in') },
+          { text: "Cancel", style: "cancel" }
+        ]
+      );
       return;
     }
 
@@ -203,14 +209,23 @@ export default function OnboardingLens() {
         {error && <Text style={styles.errorText}>{error}</Text>}
 
         <TouchableOpacity 
-          style={[styles.button, (!isAuthenticated || loading) && styles.buttonDisabled]} 
-          onPress={handleFinish} 
-          disabled={loading || !isAuthenticated}
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={() => {
+            if (!auth.currentUser || auth.currentUser.isAnonymous) {
+              // Immediate Feedback: Direct redirect to sign-in for guests
+              router.push('/(auth)/sign-in');
+            } else {
+              handleFinish();
+            }
+          }} 
+          disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.buttonText}>{!isAuthenticated ? "Signing in..." : "Activate Lens"}</Text>
+            <Text style={styles.buttonText}>
+              {!auth.currentUser || auth.currentUser.isAnonymous ? "Sign In to Save" : "Activate Lens"}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
