@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { Auth, getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
+import { Auth, getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { Firestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -11,17 +11,12 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase with resilience
-let auth: Auth;
-let db: Firestore;
-
-try {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} catch (error) {
-  console.error("Firebase Initialization Critical Failure:", error);
-}
+// Initialize Firebase with Expo-stable settings
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, {
+  localCache: memoryLocalCache()
+});
 
 // Google Auth Provider (Web)
 const googleProvider = new GoogleAuthProvider();

@@ -21,7 +21,7 @@ export interface RelationshipLens {
 export class LensService {
   /**
    * Saves the Relationship Lens profile to the user's Firestore document.
-   * Path: users/{uid}/profile/lens
+   * Path: users/{uid} (field: lens)
    */
   static async saveLens(lens: RelationshipLens) {
     if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'development') {
@@ -36,17 +36,17 @@ export class LensService {
       throw new Error("Authentication required to save Relationship Lens.");
     }
 
-    const lensRef = doc(db, 'users', userUid, 'profile', 'lens');
+    const userRef = doc(db, 'users', userUid);
     
-    console.log(`[LensService] Writing to Firestore for user: ${userUid}`);
+    console.log(`[LensService] Writing lens data to users/${userUid}`);
     try {
-      await setDoc(lensRef, {
-        ...lens,
-        updatedAt: Date.now()
+      await setDoc(userRef, {
+        lens,
+        lensUpdatedAt: Date.now()
       }, { merge: true });
-      console.log(`[LensService] Firestore Write Success.`);
+      console.log(`[LensService] Success: Lens saved.`);
     } catch (err) {
-      console.error(`[LensService] Firestore Write Failure:`, err);
+      console.error(`[LensService] Firestore Error:`, err);
       throw err;
     }
 
@@ -60,11 +60,11 @@ export class LensService {
     const user = auth.currentUser;
     if (!user) return null;
 
-    const lensRef = doc(db, 'users', user.uid, 'profile', 'lens');
-    const snap = await getDoc(lensRef);
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
 
-    if (snap.exists()) {
-      return snap.data() as RelationshipLens;
+    if (snap.exists() && snap.data().lens) {
+      return snap.data().lens as RelationshipLens;
     }
 
     return null;

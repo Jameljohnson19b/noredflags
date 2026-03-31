@@ -149,11 +149,18 @@ export default function ProPaywallScreen() {
           <Text style={styles.subtitle}>Unlock your 3-day free trial on any plan.</Text>
           
           {isAuthenticated && (
-            <View style={styles.loggedInIndicator}>
-              <Text style={styles.loggedInText}>Signed in as: <Text style={{fontWeight: '900'}}>{userEmail || 'User'}</Text></Text>
-              <TouchableOpacity onPress={handleSignOut}>
-                <Text style={styles.signOutLink}>Sign Out</Text>
-              </TouchableOpacity>
+            <View style={styles.authContainer}>
+              <View style={styles.authRow}>
+                <View style={styles.authInfo}>
+                  <Text style={styles.authLabel}>ACTIVE SESSION</Text>
+                  <Text style={styles.authValue} numberOfLines={1} ellipsizeMode="middle">
+                    {userEmail || 'Anonymous'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                  <Text style={styles.signOutText}>LOG OUT</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -249,9 +256,49 @@ const styles = StyleSheet.create({
   header: { marginTop: 20, marginBottom: 40, alignItems: 'center' },
   title: { color: '#fff', fontSize: 36, fontWeight: '900', letterSpacing: -1 },
   subtitle: { color: '#888', fontSize: 16, fontWeight: '600', marginTop: 8 },
-  loggedInIndicator: { marginTop: 16, alignItems: 'center', backgroundColor: '#111', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#222' },
-  loggedInText: { color: '#888', fontSize: 13, marginBottom: 4 },
-  signOutLink: { color: '#EF4444', fontSize: 12, fontWeight: 'bold', textDecorationLine: 'underline' },
+  authContainer: {
+    width: '100%',
+    marginTop: 24,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+  },
+  authRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  authInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  authLabel: {
+    color: '#444',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  authValue: {
+    color: '#EAB308',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  signOutButton: {
+    backgroundColor: '#111',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  signOutText: {
+    color: '#EF4444',
+    fontSize: 10,
+    fontWeight: '900',
+  },
   pricingSection: { marginTop: 40, gap: 8 },
   tierHeader: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 24, marginBottom: 12 },
   masterButton: { backgroundColor: '#111', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: '#333', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },

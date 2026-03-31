@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
+import { auth } from '../lib/firebase';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -93,12 +94,24 @@ export default function LandingPage() {
         </Text>
 
         <View style={styles.ctaContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={isWeb ? openAppStore : () => router.push('/paywall/pro')}
-          >
-            <Text style={styles.primaryButtonText}>Try It Before You Buy</Text>
-          </TouchableOpacity>
+          {auth.currentUser && !auth.currentUser.isAnonymous ? (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ color: '#EAB308', marginBottom: 12, fontWeight: '700' }}>WELCOME BACK: {auth.currentUser.email}</Text>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => router.push('/onboarding')}
+              >
+                <Text style={styles.primaryButtonText}>Enter App</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={isWeb ? openAppStore : () => router.push('/paywall/pro')}
+            >
+              <Text style={styles.primaryButtonText}>Try It Before You Buy</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isWeb && (

@@ -134,8 +134,24 @@ export default function OnboardingLens() {
         <Text style={styles.subtitle}>We use this deeply personal profile to stop generic advice. Tell us the absolute truth about what you need.</Text>
 
         {auth.currentUser && !auth.currentUser.isAnonymous && (
-           <View style={styles.authBadge}>
-             <Text style={styles.authBadgeText}>Signed in as: {auth.currentUser.email}</Text>
+           <View style={styles.authContainer}>
+             <View style={styles.authRow}>
+               <View style={styles.authInfo}>
+                 <Text style={styles.authLabel}>ACTIVE SESSION</Text>
+                 <Text style={styles.authValue} numberOfLines={1} ellipsizeMode="middle">
+                   {auth.currentUser.email || 'Anonymous'}
+                 </Text>
+               </View>
+               <TouchableOpacity 
+                 style={styles.signOutButton} 
+                 onPress={async () => {
+                   await auth.signOut();
+                   router.replace('/(auth)/sign-in');
+                 }}
+               >
+                 <Text style={styles.signOutText}>LOG OUT</Text>
+               </TouchableOpacity>
+             </View>
            </View>
         )}
 
@@ -289,18 +305,47 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  authBadge: {
-    backgroundColor: '#111',
-    padding: 12,
-    borderRadius: 8,
+  authContainer: {
+    width: '100%',
+    backgroundColor: '#0A0A0A',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#1A1A1A',
   },
-  authBadgeText: {
+  authRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  authInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  authLabel: {
+    color: '#444',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  authValue: {
     color: '#EAB308',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
-    textTransform: 'uppercase',
+  },
+  signOutButton: {
+    backgroundColor: '#111',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  signOutText: {
+    color: '#EF4444',
+    fontSize: 10,
+    fontWeight: '900',
   }
 });

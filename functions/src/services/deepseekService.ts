@@ -18,8 +18,27 @@ export class DeepSeekService {
      * TEXTUAL INTERPRETATION
      * Analyzes raw observation notes or transcribed voice text for psychological dating signals.
      */
-    async analyzeSignal(content: string): Promise<SignalSignal> {
+    async analyzeSignal(content: string, lens?: any): Promise<SignalSignal> {
         if (!this.apiKey) throw new Error("DEEPSEEK_API_KEY NOT FOUND In Secret Manager.");
+
+        let systemPrompt = `You are REDFLAGS, a dating psychological risk assessment engine. 
+        Analyze the user's dating observation or signal for caution flags (Green/Yellow/Red/Max). 
+        Think about emotional intelligence, boundaries, and red flags.`;
+
+        if (lens) {
+            systemPrompt += `\n\nCRITICAL CONTEXT: Interpret this signal through the user's "Relationship Lens" (Personal Standards):
+            - Who they are: ${lens.whoAmI}
+            - What they want: ${lens.userWants}
+            - Goals: ${lens.relationshipGoals}
+            - Hard Dealbreakers: ${lens.hardDealbreakers}
+            - Soft Concerns: ${lens.softConcerns}
+            
+            If a signal contradicts their "Hard Dealbreakers", escalate the riskLevel significantly. 
+            If a signal perfectly matches their stated "Goals", consider it a Green Flag (LOW risk).`;
+        }
+
+        systemPrompt += `\n\nOutput MUST be a valid JSON object: 
+        { "riskLevel": "LOW"|"MEDIUM"|"HIGH"|"MAX", "reasoning": "A concise, hard-hitting analysis starting with why it matches or fails their personal lens.", "confidence": 0.0-1.0 }`;
 
         try {
             const response = await fetch(`${this.apiUrl}/chat/completions`, {
@@ -33,11 +52,7 @@ export class DeepSeekService {
                     messages: [
                         { 
                           role: 'system', 
-                          content: `You are REDFLAGS, a dating psychological risk assessment engine. 
-                          Analyze the user's dating observation or signal for caution flags (Green/Yellow/Red/Max). 
-                          Think about emotional intelligence, boundaries, and red flags.
-                          Output MUST be a valid JSON object: 
-                          { "riskLevel": "LOW"|"MEDIUM"|"HIGH"|"MAX", "reasoning": "A concise, hard-hitting analysis.", "confidence": 0.0-1.0 }` 
+                          content: systemPrompt 
                         },
                         { role: 'user', content }
                     ],

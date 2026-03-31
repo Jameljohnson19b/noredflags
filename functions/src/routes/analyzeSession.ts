@@ -8,7 +8,7 @@ import { db } from "../lib/firebase";
  */
 export const analyzeSessionHandler = async (req: Request, res: Response) => {
     try {
-        const { statement, image, sessionId, userId } = req.body;
+        const { statement, image, sessionId, userId, lens } = req.body;
 
         if (!sessionId || !userId) {
             return res.status(400).json({ error: "Context missing (sessionId or userId)." });
@@ -27,8 +27,8 @@ export const analyzeSessionHandler = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "No signal captured (empty text or image)." });
         }
 
-        // COGNITIVE INTERPRETATION: Run through REDFLAGS Core
-        const signal = await deepseekService.analyzeSignal(content);
+        // COGNITIVE INTERPRETATION: Run through REDFLAGS Core with Personalized Lens
+        const signal = await deepseekService.analyzeSignal(content, lens);
 
         // PERSISTENCE: Save trace to user's history
         const sessionRef = db.collection('users').doc(userId).collection('sessions').doc(sessionId);

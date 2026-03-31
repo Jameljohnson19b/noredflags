@@ -1,5 +1,6 @@
 import { auth } from '../firebase';
 import { Alert } from 'react-native';
+import { LensService } from '../onboarding/lensService';
 
 export interface SignalResponse {
   success: boolean;
@@ -40,7 +41,8 @@ export class AnalysisService {
 
     try {
       const idToken = await user.getIdToken();
-      console.log(`[AnalysisService] Sending Signal to: ${this.CLOUD_FUNCTION_URL}`);
+      const lens = await LensService.getLens();
+      console.log(`[AnalysisService] Sending Signal with Lens context to: ${this.CLOUD_FUNCTION_URL}`);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
@@ -57,7 +59,8 @@ export class AnalysisService {
         body: JSON.stringify({
           statement,
           sessionId,
-          userId: user.uid
+          userId: user.uid,
+          lens: lens || undefined
         }),
         signal: controller.signal
       });
