@@ -47,8 +47,9 @@ export default function OnboardingLens() {
     }
 
     const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
-      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Logged Out'}`);
-      if (user && !user.isAnonymous) {
+      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Anonymous/Logged Out'}`);
+      // FIX: Allow anonymous users to proceed to unlock the app's trial flow
+      if (user) {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
@@ -207,7 +208,7 @@ export default function OnboardingLens() {
           disabled={loading || !isAuthenticated}
         >
           {loading ? (
-            <ActivityIndicator color={Colors.background} />
+            <ActivityIndicator color="#000" />
           ) : (
             <Text style={styles.buttonText}>{!isAuthenticated ? "Signing in..." : "Activate Lens"}</Text>
           )}
