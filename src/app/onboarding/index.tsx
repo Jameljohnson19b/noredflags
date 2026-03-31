@@ -41,18 +41,20 @@ export default function OnboardingLens() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Initial check for immediate availability
-    if (auth.currentUser && !auth.currentUser.isAnonymous) {
-      setIsAuthenticated(true);
+    // 🔥 STRICT AUTH GUARD: Guest users cannot access this screen.
+    const userSnapshot = auth.currentUser;
+    if (!userSnapshot || userSnapshot.isAnonymous) {
+      console.log("[Onboarding] Unauthorized Guest. Shunting to Sign-In.");
+      router.replace('/(auth)/sign-in');
+      return;
     }
 
     const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
-      console.log(`[Onboarding] Auth State Changed: ${user?.email || 'Guest/Logged Out'}`);
-      // REVERT: Only allow permanent accounts (Apple/Google/Email) to activate their lens
-      if (user && !user.isAnonymous) {
-        setIsAuthenticated(true);
-      } else {
+      if (!user || user.isAnonymous) {
         setIsAuthenticated(false);
+        router.replace('/(auth)/sign-in');
+      } else {
+        setIsAuthenticated(true);
       }
     });
 
