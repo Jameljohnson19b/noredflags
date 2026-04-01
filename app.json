@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.noredflags.app",
-      "buildNumber": "28",
+      "buildNumber": "29",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -23,6 +23,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
+              "com.noredflags.app",
               "com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9"
             ]
           }

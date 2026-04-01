@@ -184,7 +184,9 @@ export default function ProPaywallScreen() {
               <Text style={styles.masterButtonText}>3-Day Trial then $2.99 / week</Text>
               <Text style={styles.planSub}>Track 3 people simultaneously.</Text>
             </View>
-            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+            <View style={styles.selectBadge}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.selectText}>SELECT</Text>}
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.masterButton} onPress={() => handlePurchase({ id: 'core_yearly' })} disabled={loading}>
@@ -192,7 +194,9 @@ export default function ProPaywallScreen() {
               <Text style={styles.masterButtonText}>$29.99 per year</Text>
               <Text style={styles.planSub}>Lock in the lowest annual rate.</Text>
             </View>
-            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+            <View style={styles.selectBadge}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.selectText}>SELECT</Text>}
+            </View>
           </TouchableOpacity>
 
           <Text style={styles.tierHeader}>PRO:</Text>
@@ -201,7 +205,9 @@ export default function ProPaywallScreen() {
               <Text style={styles.masterButtonText}>3-Day Trial then $9.99 / month</Text>
               <Text style={styles.planSub}>Track 10 people + Advanced Patterns.</Text>
             </View>
-            <View style={styles.selectBadge}><Text style={styles.selectText}>SELECT</Text></View>
+            <View style={styles.selectBadge}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.selectText}>SELECT</Text>}
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.masterButton, styles.masterButtonFeatured]} onPress={() => handlePurchase({ id: 'pro_yearly' })} disabled={loading}>
@@ -209,7 +215,9 @@ export default function ProPaywallScreen() {
               <Text style={[styles.masterButtonText, { color: '#000' }]}>$49.99 per year</Text>
               <Text style={[styles.planSub, { color: '#444' }]}>Unlimited Intelligence Access.</Text>
             </View>
-            <View style={[styles.selectBadge, { backgroundColor: '#000' }]}><Text style={[styles.selectText, { color: '#fff' }]}>SELECT</Text></View>
+            <View style={[styles.selectBadge, { backgroundColor: '#000' }]}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.selectText, { color: '#fff' }]}>SELECT</Text>}
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -219,12 +227,12 @@ export default function ProPaywallScreen() {
             <Text style={styles.subtitle}>Sign in to lock in your subscription.</Text>
             
             <View style={styles.authButtons}>
-              <TouchableOpacity style={styles.authButton} onPress={() => handleSocialSignIn('apple')}>
-                <Text style={styles.authButtonText}> Sign in with Apple</Text>
+              <TouchableOpacity style={styles.authButton} onPress={() => handleSocialSignIn('apple')} disabled={loading}>
+                {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.authButtonText}> Sign in with Apple</Text>}
               </TouchableOpacity>
               
-              <TouchableOpacity style={[styles.authButton, styles.googleButton]} onPress={() => handleSocialSignIn('google')}>
-                <Text style={styles.googleButtonText}>G Sign in with Google</Text>
+              <TouchableOpacity style={[styles.authButton, styles.googleButton]} onPress={() => handleSocialSignIn('google')} disabled={loading}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.googleButtonText}>G Sign in with Google</Text>}
               </TouchableOpacity>
               
               <TouchableOpacity style={{ marginTop: 12 }} onPress={() => router.push('/(auth)/sign-in')}>
@@ -250,12 +258,6 @@ export default function ProPaywallScreen() {
           Subscriptions start with a 3-day free trial. Your account will be charged after the trial ends. Cancel anytime.
         </Text>
       </ScrollView>
-
-      {loading && (
-        <View style={styles.overlay}>
-          <ActivityIndicator color="#fff" size="large" />
-        </View>
-      )}
     </SafeAreaView>
   );
 }

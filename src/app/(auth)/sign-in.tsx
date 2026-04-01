@@ -50,8 +50,10 @@ export default function SignIn() {
     
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("Logged in with:", email);
+      // Normalization: Remove accidental spaces often added by mobile keyboards
+      const normalizedEmail = email.trim();
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      console.log("Logged in successfully:", normalizedEmail);
       router.replace('/paywall/pro');
     } catch (error: any) {
       console.error(error);
@@ -97,8 +99,20 @@ export default function SignIn() {
     }
   };
 
-  const handleGuestLogin = () => {
-    router.replace('/paywall/pro');
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    try {
+      // 🕵️ Secure Guest Auth: Provide a temporary UID to ensure Firestore permissions 
+      // stay happy while the user tests the app.
+      const { signInAnonymously } = await import('firebase/auth');
+      await signInAnonymously(auth);
+      router.replace('/paywall/pro');
+    } catch (e: any) {
+      console.error("Guest login failed:", e);
+      Alert.alert("Guest Mode Error", "Unable to start guest session. Please try email sign-up.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,6 +141,9 @@ export default function SignIn() {
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
+        keyboardType="email-address" // 👈 Opens the '@' keyboard for faster entry
+        autoComplete="email"          // 👈 Supports password manager auto-fill
+        spellCheck={false}           // 👈 Prevents annoying autocorrect on emails
       />
       
       <TextInput
