@@ -16,7 +16,7 @@ import { Colors } from '../../constants/colors';
 import { LensService } from '../../lib/onboarding/lensService';
 import { auth, db } from '../../lib/firebase';
 import { User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function OnboardingLens() {
   const [lens, setLens] = useState({
@@ -38,6 +38,7 @@ export default function OnboardingLens() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true); // 👈 NEW: Prevents form flicker
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -49,37 +50,39 @@ export default function OnboardingLens() {
       return;
     }
 
+    let subscriptionUnsubscribe: (() => void) | null = null;
+
     const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
       if (!user || user.isAnonymous) {
+        setIsVerifying(false);
         setIsAuthenticated(false);
         router.replace('/(auth)/sign-in');
       } else {
         setIsAuthenticated(true);
-        // 🔥 SUBSCRIPTION GUARD: Ensure the user has selected a billing plan (Trial/Core/Pro)
-        // For now, in Mock Mode, we check if they've passed the paywall.
-        // In Prod, we would call RevenueCatService.isSubscribed()
-        checkSubscription(user.uid);
+        // Start real-time subscription listener to avoid race conditions
+        const userRef = doc(db, 'users', user.uid);
+        subscriptionUnsubscribe = onSnapshot(userRef, (snap) => {
+          setIsVerifying(false); // Authentication and Data are now ready
+          if (snap.exists()) {
+            const data = snap.data();
+            if (!data.isSubscribed && !data.isPro) {
+              console.log("[Onboarding] Subscription Required. Redirecting to Paywall.");
+              router.replace('/paywall/pro');
+            }
+          } else {
+            // User exists in Auth but not in Firestore yet? Redirect to paywall to initialize
+            router.replace('/paywall/pro');
+          }
+        }, (err) => {
+          console.error("Subscription watch failure:", err);
+          setIsVerifying(false);
+        });
       }
     });
 
-    const checkSubscription = async (uid: string) => {
-      try {
-        // We check the user document to see if they have a purchase confirmation.
-        // This is a safety check to ensure they can't deep-link into the lens for free.
-        const userRef = doc(db, 'users', uid);
-        const snap = await getDoc(userRef);
-        
-        if (!snap.exists() || (!snap.data().isSubscribed && !snap.data().isPro)) {
-           console.log("[Onboarding] Subscription Required. Redirecting to Paywall.");
-           router.replace('/paywall/pro');
-        }
-      } catch (e) {
-        console.error("Subscription check failure:", e);
-      }
-    };
-
     return () => {
       unsubscribe();
+      if (subscriptionUnsubscribe) subscriptionUnsubscribe();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
@@ -147,6 +150,15 @@ export default function OnboardingLens() {
       setLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.text} />
+        <Text style={[styles.subtitle, { marginTop: 16 }]}>Verifying Entitlements...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
