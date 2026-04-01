@@ -50,13 +50,12 @@ export default function ProPaywallScreen() {
       signInWithCredential(auth, credential)
         .then(() => {
           setIsAuthenticated(true);
-          // FLOW FIX: Stay on paywall after login as requested
-          setLoading(false);
+          setUserEmail(auth.currentUser?.email || null); // 👈 INSTANT SYNC
         })
         .catch((e) => {
-          setLoading(false);
           Alert.alert("Google Auth Error", e.message);
-        });
+        })
+        .finally(() => setLoading(false)); // 👈 STABLE LOADING
     }
   }, [response]);
 

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Colors } from '../constants/colors';
+import { RevenueCatService } from '../lib/purchases/revenueCat';
 
 const CookiesPopup = () => {
   const [visible, setVisible] = useState(true);
@@ -31,6 +32,12 @@ const CookiesPopup = () => {
 
 export default function Layout() {
   useEffect(() => {
+    // 🏦 Global Monetization Init: Ensures app is ready to handle purchases 
+    // and fetch current offerings immediately.
+    RevenueCatService.initialize().catch(err => {
+      console.error('RevenueCat init failed:', err);
+    });
+
     import('../lib/firebase').catch((err) => {
       console.error('Firebase init failed:', err);
     });
