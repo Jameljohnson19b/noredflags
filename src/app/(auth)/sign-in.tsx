@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { auth } from '../../lib/firebase';
-import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { signInWithEmailAndPassword, OAuthProvider, GoogleAuthProvider, signInWithCredential, signInAnonymously } from 'firebase/auth';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -104,7 +104,6 @@ export default function SignIn() {
     try {
       // 🕵️ Secure Guest Auth: Provide a temporary UID to ensure Firestore permissions 
       // stay happy while the user tests the app.
-      const { signInAnonymously } = await import('firebase/auth');
       await signInAnonymously(auth);
       router.replace('/paywall/pro');
     } catch (e: any) {

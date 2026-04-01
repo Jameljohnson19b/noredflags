@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.noredflags.app",
-      "buildNumber": "29",
+      "buildNumber": "30",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -30,7 +30,7 @@
         ]
       }
     },
-    "scheme": "redflags",
+    "scheme": "com.googleusercontent.apps.606183804439-4fshjefn9ev5h8iu8935int44e9aevc9",
     "splash": {
       "image": "./assets/icons/splash.png",
       "resizeMode": "contain",
